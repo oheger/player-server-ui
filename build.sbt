@@ -16,6 +16,7 @@
 
 import org.scalajs.linker.interface.ModuleSplitStyle
 
+lazy val VersionLaminar = "15.0.1"
 lazy val VersionScala = "3.3.0"
 lazy val VersionScalaJsDom = "2.4.0"
 
@@ -30,4 +31,5 @@ lazy val playerServerUi = project.in(file("."))
           ModuleSplitStyle.SmallModulesFor(List("com.github.oheger.playerserverui")))
     },
     libraryDependencies += "org.scala-js" %%% "scalajs-dom" % VersionScalaJsDom,
+    libraryDependencies += "com.raquo" %%% "laminar" % VersionLaminar
   )

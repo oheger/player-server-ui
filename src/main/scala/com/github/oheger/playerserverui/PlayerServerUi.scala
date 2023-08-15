@@ -16,32 +16,35 @@
 
 package com.github.oheger.playerserverui
 
+import com.raquo.laminar.api.L.{*, given}
 import org.scalajs.dom
 
 @main
 def PlayerServerUi(): Unit =
-  dom.document.querySelector("#app").innerHTML = s"""
-    <div>
-      <h1>PlayerServer UI</h1>
-      <div class="card">
-        <button id="counter" type="button"></button>
-      </div>
-      <p class="read-the-docs">
-        Initial demo version.
-      </p>
-    </div>
-  """
-
-  setupCounter(dom.document.getElementById("counter"))
+  renderOnDomContentLoaded(
+    dom.document.getElementById("app"),
+    Main.appElement()
+  )
 end PlayerServerUi
 
-def setupCounter(element: dom.Element): Unit =
-  var counter = 0
+object Main:
+  def appElement(): Element =
+    div(
+      h1("PlayerServer UI"),
+      div(className := "card",
+        counterButton()),
+      p(className := "read-the-docs",
+        s"Initial demo version (loaded from ${dom.window.location})")
+    )
+  end appElement
 
-  def setCounter(count: Int): Unit =
-    counter = count
-    element.innerHTML = s"count is $counter"
-
-  element.addEventListener("click", e => setCounter(counter + 1))
-  setCounter(0)
-end setupCounter
+  private def counterButton(): Element =
+    val counter = Var(0)
+    button(
+      tpe := "button",
+      "count is ",
+      child.text <-- counter,
+      onClick --> { event => counter.update(c => c + 1) },
+    )
+  end counterButton
+end Main
