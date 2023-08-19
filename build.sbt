@@ -21,6 +21,8 @@ lazy val VersionScala = "3.3.0"
 lazy val VersionScalaJsDom = "2.4.0"
 lazy val VersionSttp = "3.9.0"
 
+lazy val VersionScalaTest = "3.2.16"
+
 lazy val playerServerUi = project.in(file("."))
   .enablePlugins(ScalaJSPlugin)
   .settings(
@@ -35,4 +37,5 @@ lazy val playerServerUi = project.in(file("."))
     libraryDependencies += "com.raquo" %%% "laminar" % VersionLaminar,
     libraryDependencies += "com.softwaremill.sttp.client3" %%% "core" % VersionSttp,
     libraryDependencies += "com.softwaremill.sttp.client3" %%% "zio-json" % VersionSttp,
+    libraryDependencies += "org.scalatest" %%% "scalatest" % VersionScalaTest % Test,
   )
