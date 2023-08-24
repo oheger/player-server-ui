@@ -17,27 +17,25 @@
 package com.github.oheger.playerserverui
 
 import com.github.oheger.playerserverui.model.RadioModel
-import com.github.oheger.playerserverui.service.RadioService
-import com.raquo.airstream.state.{StrictSignal, Var}
+import com.raquo.airstream.core.Signal
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 /**
- * A class storing the state of the player server UI.
- * @param radioService the service to interact with the radio player
+ * A trait defining functionality to update and query the state of the player
+ * server UI.
  */
-class UIModel(radioService: RadioService):
-  /** Stores the current list of radio sources. */
-  private val radioSourcesVar: Var[Try[RadioModel.RadioSources]] = Var(Success(RadioModel.RadioSources(List.empty)))
-
-  /** Signal for the current list of radio sources. */
-  val radioSourcesSignal: StrictSignal[Try[RadioModel.RadioSources]] = radioSourcesVar.signal
-
-  import scala.concurrent.ExecutionContext.Implicits.global
+trait UIModel:
+  /**
+   * Returns a signal for the current list of radio sources. The signal can
+   * also report a failure when querying the radio sources from the server.
+   *
+   * @return the signal with the current state of available radio sources
+   */
+  def radioSourcesSignal: Signal[Try[RadioModel.RadioSources]]
 
   /**
-   * Loads the current list of radio sources from the server using the
-   * [[RadioService]].
+   * Loads the current list of radio sources from the server. This function
+   * should be invoked on application startup.
    */
-  def initRadioSources(): Unit =
-    radioService.loadRadioSources() onComplete radioSourcesVar.set
+  def initRadioSources(): Unit

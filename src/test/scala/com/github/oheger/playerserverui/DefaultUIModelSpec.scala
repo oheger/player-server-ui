@@ -27,14 +27,14 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
-object UIModelSpec:
+object DefaultUIModelSpec:
   /** Timeout when waiting for a specific signal value. */
   private val SignalTimeoutMs = 3000
 
 /**
- * Test class for [[UIModel]].
+ * Test class for [[DefaultUIModel]].
  */
-class UIModelSpec extends AsyncFlatSpec with Matchers:
+class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   /**
    * The execution context for asynchronous checks of ScalaTest. This must be
    * the context used by Scala.js.
@@ -42,7 +42,7 @@ class UIModelSpec extends AsyncFlatSpec with Matchers:
   implicit override def executionContext: ExecutionContext =
     scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
 
-  import UIModelSpec.*
+  import DefaultUIModelSpec.*
 
   /**
    * Helper function for checking whether a signal takes a specific value. The
@@ -79,7 +79,7 @@ class UIModelSpec extends AsyncFlatSpec with Matchers:
         Future.successful(RadioModel.RadioSources(RadioSourcesList))
     }
 
-    val model = new UIModel(service)
+    val model = new DefaultUIModel(service)
     model.initRadioSources()
 
     assertSignalValue(model.radioSourcesSignal, Success(RadioModel.RadioSources(RadioSourcesList)))
@@ -92,7 +92,7 @@ class UIModelSpec extends AsyncFlatSpec with Matchers:
         Future.failed(exception)
     }
 
-    val model = new UIModel(service)
+    val model = new DefaultUIModel(service)
     model.initRadioSources()
 
     assertSignalValue(model.radioSourcesSignal, Failure(exception))
