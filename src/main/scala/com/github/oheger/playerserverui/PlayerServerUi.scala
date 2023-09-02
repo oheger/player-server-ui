@@ -16,8 +16,12 @@
 
 package com.github.oheger.playerserverui
 
+import com.github.oheger.playerserverui.model.RadioModel
+import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.laminar.api.L.{*, given}
 import org.scalajs.dom
+
+import scala.util.{Failure, Success, Try}
 
 @main
 def PlayerServerUi(): Unit =
@@ -28,23 +32,89 @@ def PlayerServerUi(): Unit =
 end PlayerServerUi
 
 object Main:
+  /** The UI model. */
+  private val uiModel = createUiModel()
+
   def appElement(): Element =
     div(
       h1("PlayerServer UI"),
-      div(className := "card",
-        counterButton()),
-      p(className := "read-the-docs",
-        s"Initial demo version (loaded from ${dom.window.location})")
+      radioSourcesElement()
     )
   end appElement
 
-  private def counterButton(): Element =
-    val counter = Var(0)
-    button(
-      tpe := "button",
-      "count is ",
-      child.text <-- counter,
-      onClick --> { event => counter.update(c => c + 1) },
+  /**
+   * Performs a refresh of the UI state by loading all state information from
+   * the server.
+   *
+   * @param model the current model
+   */
+  private[playerserverui] def refreshUi(model: UIModel = uiModel): Unit =
+    model.initRadioSources()
+
+  /**
+   * Returns an element that displays the currently available radio sources.
+   *
+   * @param model the UI model
+   * @return the element to display the radio sources
+   */
+  private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
+    div(
+      children <-- model.radioSourcesSignal.map {
+        case Success(sources) =>
+          sources.sources.map(renderRadioSource)
+        case Failure(exception) =>
+          List(p(className := "error", exception.getMessage))
+      }
     )
-  end counterButton
+
+  /**
+   * Generates an element for the specified radio source.
+   *
+   * @param source the radio source to be rendered
+   * @return the element representing this radio source
+   */
+  private def renderRadioSource(source: RadioModel.RadioSource): Element =
+    p(source.name)
+
+  /**
+   * Creates the UI model for this application. Per default, a model
+   * implementation is returned that is connected to the player server. If a
+   * test environment is detected, a dummy model is returned instead.
+   *
+   * @return the [[UIModel]] for this application
+   */
+  private def createUiModel(): UIModel =
+    fetchServerUri().filter(isProdEnvironment) map { serverUri =>
+      new DefaultUIModel(new RadioService(baseUrl = serverUri))
+    } getOrElse DummyUIModel
+
+  /**
+   * Tries to obtain the URI of the server from which this application was
+   * loaded. This can fail in a test environment where the ''window'' object is
+   * not available.
+   *
+   * @return a ''Try'' with the URI of the player server
+   */
+  private def fetchServerUri(): Try[String] = Try {
+    dom.window.location.origin
+  }
+
+  /**
+   * Checks whether the given server URI points to a test environment. This is
+   * typically the case if the application was loaded from localhost.
+   *
+   * @param serverUri the server URI
+   * @return a flag whether this URI indicates a test environment
+   */
+  private def isTestEnvironment(serverUri: String): Boolean =
+    serverUri.contains("://localhost")
+
+  /**
+   * Checks whether the given server URI points to a production (i.e. a
+   * non-test) environment.
+   *
+   * @param serverUri the server URI
+   * @return a flag whether this URI indicates a real, production environment
+   */
+  private def isProdEnvironment(serverUri: String): Boolean = !isTestEnvironment(serverUri)
 end Main
