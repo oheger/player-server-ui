@@ -65,7 +65,7 @@ object Main:
         case Some(Failure(exception)) =>
           List(p(className := "error", exception.getMessage))
         case None =>
-          List.empty
+          List(img(src := "/loading.gif", alt := "Loading"))
       }
     )
 
