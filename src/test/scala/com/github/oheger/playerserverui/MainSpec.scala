@@ -69,6 +69,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
       DummyUIModel.DummyRadioSources.sources foreach { source =>
         $(element.ref).find(s"p:contains('${source.name}')").length should be(1)
       }
+      $(element.ref).find("img").length should be(0)
     }
   }
 
@@ -83,6 +84,14 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find(s"p.error:contains('$message')")
     }
   }
+
+  it should "show a progress indicator while loading data" in {
+    val element = Main.radioSourcesElement(new UIModelTestImpl)
+
+    testDom(element) {
+      $(element.ref).find("img[src='/loading.gif']").length should be(1)
+    }
+  }
 end MainSpec
 
 /**
@@ -91,8 +100,7 @@ end MainSpec
  */
 private class UIModelTestImpl extends UIModel:
   /** Stores the current state of radio sources. */
-  private val radioSources: Var[Option[Try[RadioModel.RadioSources]]] =
-    Var(Some(Success(RadioModel.RadioSources(List.empty))))
+  private val radioSources: Var[Option[Try[RadioModel.RadioSources]]] = Var(None)
 
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
