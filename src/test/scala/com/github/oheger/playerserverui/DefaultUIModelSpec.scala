@@ -20,16 +20,23 @@ import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.{EventStream, Observer, Signal}
 import com.raquo.airstream.ownership.ManualOwner
+import com.raquo.airstream.state.StrictSignal
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object DefaultUIModelSpec:
   /** Timeout when waiting for a specific signal value. */
   private val SignalTimeoutMs = 3000
+
+  /**
+   * The URL to be used when initializing a radio service. Since the service is
+   * not actually invoked, this is a dummy URL.
+   */
+  private val ServiceUrl = "https://radio.example.org"
 
 /**
  * Test class for [[DefaultUIModel]].
@@ -48,8 +55,9 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
    * Helper function for checking whether a signal takes a specific value. The
    * function checks asynchronously whether a value as specified by a condition
    * is found within a timeout. Otherwise, a failed assertion is returned.
+   *
    * @param signal the signal to test
-   * @param test the function to check the signal value
+   * @param test   the function to check the signal value
    * @tparam A the type of the signal
    * @return a ''Future'' with an assertion to check asynchronously
    */
@@ -65,6 +73,16 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     timeout.addObserver(observer)
     promise.future.map { result => result shouldBe true } andThen { _ => owner.killSubscriptions() }
 
+  /**
+   * Helper function for checking a signal against a specific value. This
+   * function is analogous to ''assertSignal()'', but instead of a check
+   * function, an expected value can be specified directly.
+   *
+   * @param signal        the signal to test
+   * @param expectedValue the expected value of this signal
+   * @tparam A the type of the signal
+   * @return a ''Future'' with an assertion that checks the signal value
+   */
   private def assertSignalValue[A](signal: Signal[A], expectedValue: A): Future[Assertion] =
     assertSignal(signal)(_ == expectedValue)
 
@@ -74,7 +92,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
       RadioModel.RadioSource("s2", "RadioSource2", 2),
       RadioModel.RadioSource("s3", "RadioSource3", 3),
     )
-    val service = new RadioService("https://radio.example.org") {
+    val service = new RadioService(ServiceUrl) {
       override def loadRadioSources(): Future[RadioModel.RadioSources] =
         Future.successful(RadioModel.RadioSources(RadioSourcesList))
     }
@@ -82,12 +100,12 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.initRadioSources()
 
-    assertSignalValue(model.radioSourcesSignal, Success(RadioModel.RadioSources(RadioSourcesList)))
+    assertSignalValue(model.radioSourcesSignal, Some(Success(RadioModel.RadioSources(RadioSourcesList))))
   }
 
   it should "record an exception when loading the radio sources from the server" in {
     val exception = new IllegalStateException("Test exception when loading radio sources.")
-    val service = new RadioService("https://radio.example.org") {
+    val service = new RadioService(ServiceUrl) {
       override def loadRadioSources(): Future[RadioModel.RadioSources] =
         Future.failed(exception)
     }
@@ -95,5 +113,11 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.initRadioSources()
 
-    assertSignalValue(model.radioSourcesSignal, Failure(exception))
+    assertSignalValue(model.radioSourcesSignal, Some(Failure(exception)))
+  }
+
+  it should "initially have a value of None" in {
+    val model = new DefaultUIModel(new RadioService(ServiceUrl))
+
+    model.radioSourcesSignal.asInstanceOf[StrictSignal[Option[Try[RadioModel.RadioSources]]]].now() shouldBe empty
   }

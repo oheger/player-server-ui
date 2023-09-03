@@ -21,7 +21,7 @@ import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 /**
  * A class storing the state of the player server UI.
@@ -30,10 +30,10 @@ import scala.util.{Success, Try}
  */
 class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** Stores the current list of radio sources. */
-  private val radioSourcesVar: Var[Try[RadioModel.RadioSources]] = Var(Success(RadioModel.RadioSources(List.empty)))
+  private val radioSourcesVar: Var[Option[Try[RadioModel.RadioSources]]] = Var(None)
 
   /** Signal for the current list of radio sources. */
-  override val radioSourcesSignal: Signal[Try[RadioModel.RadioSources]] = radioSourcesVar.signal
+  override val radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = radioSourcesVar.signal
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -42,4 +42,6 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    * [[RadioService]].
    */
   def initRadioSources(): Unit =
-    radioService.loadRadioSources() onComplete radioSourcesVar.set
+    radioService.loadRadioSources() onComplete { triedSources =>
+      radioSourcesVar.set(Some(triedSources))
+    }

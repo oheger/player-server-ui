@@ -28,11 +28,12 @@ import scala.util.Try
 trait UIModel:
   /**
    * Returns a signal for the current list of radio sources. The signal can
-   * also report a failure when querying the radio sources from the server.
+   * also report a failure when querying the radio sources from the server. It
+   * has the value ''None'' while data is loaded from the server.
    *
    * @return the signal with the current state of available radio sources
    */
-  def radioSourcesSignal: Signal[Try[RadioModel.RadioSources]]
+  def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]]
 
   /**
    * Loads the current list of radio sources from the server. This function

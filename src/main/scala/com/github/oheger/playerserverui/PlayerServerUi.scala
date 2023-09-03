@@ -60,10 +60,12 @@ object Main:
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
     div(
       children <-- model.radioSourcesSignal.map {
-        case Success(sources) =>
+        case Some(Success(sources)) =>
           sources.sources.map(renderRadioSource)
-        case Failure(exception) =>
+        case Some(Failure(exception)) =>
           List(p(className := "error", exception.getMessage))
+        case None =>
+          List.empty
       }
     )
 
