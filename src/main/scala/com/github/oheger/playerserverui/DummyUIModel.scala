@@ -42,9 +42,9 @@ object DummyUIModel extends UIModel:
   )
 
   /** A static data object with the dummy radio sources data. */
-  private val sourcesVal = Val(Success(DummyRadioSources))
+  private val sourcesVal = Val(Some(Success(DummyRadioSources)))
 
-  override def radioSourcesSignal: Signal[Try[RadioModel.RadioSources]] = sourcesVal.signal
+  override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = sourcesVal.signal
 
   override def initRadioSources(): Unit = {}
   
