@@ -1,0 +1,7 @@
+= Player Server UI
+
+This repository contains a Web application implemented in https://www.scala-js.org/[Scala.js] which provides a graphical user interface for the https://github.com/oheger/LineDJ[Line DJ] https://github.com/oheger/LineDJ/tree/main/playerServer[Player Server] application.
+
+The intended usage scenario is to run the player server on a machine in the local network. From this machine, the UI application can be accessed, and the player can be remotely controlled.
+
+Using the https://github.com/oheger/WifiControl[Wi-Fi Control] project, the UI can easily be opened on Android devices: The Wi-Fi Control app can locate the player server in the network and open the UI automatically.
