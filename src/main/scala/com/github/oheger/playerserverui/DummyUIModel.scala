@@ -17,6 +17,7 @@
 package com.github.oheger.playerserverui
 
 import com.github.oheger.playerserverui.model.RadioModel
+import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Val
 
@@ -41,10 +42,23 @@ object DummyUIModel extends UIModel:
     )
   )
 
+  /** An object defining the state of the current radio source. */
+  final val CurrentSource = RadioService.CurrentSourceState(
+    Some(RadioModel.RadioSource("s42", "The Current Source", 17)),
+    playbackEnabled = true
+  )
+
   /** A static data object with the dummy radio sources data. */
   private val sourcesVal = Val(Some(Success(DummyRadioSources)))
 
+  /** A static data object with the current radio source state. */
+  private val currentSourceStateVal = Val(Some(Success(CurrentSource)))
+
   override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = sourcesVal.signal
 
+  override val currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] =
+    currentSourceStateVal.signal
+
   override def initRadioSources(): Unit = {}
-  
+
+  override def initCurrentSource(): Unit = {}

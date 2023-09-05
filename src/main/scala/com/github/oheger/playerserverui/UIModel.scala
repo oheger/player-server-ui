@@ -17,6 +17,7 @@
 package com.github.oheger.playerserverui
 
 import com.github.oheger.playerserverui.model.RadioModel
+import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 
 import scala.util.Try
@@ -36,7 +37,22 @@ trait UIModel:
   def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]]
 
   /**
+   * Returns a signal for the playback state of the current radio source. This
+   * can be used to display the current radio source and whether playback is
+   * currently active. The signal supports default loading and error handling.
+   *
+   * @return the signal with the current source state
+   */
+  def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]]
+
+  /**
    * Loads the current list of radio sources from the server. This function
    * should be invoked on application startup.
    */
   def initRadioSources(): Unit
+
+  /**
+   * Loads the state for the current radio source from the server. This causes
+   * the signal for this state to be updated.
+   */
+  def initCurrentSource(): Unit

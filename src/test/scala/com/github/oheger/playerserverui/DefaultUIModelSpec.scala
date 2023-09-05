@@ -121,3 +121,36 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
     model.radioSourcesSignal.asInstanceOf[StrictSignal[Option[Try[RadioModel.RadioSources]]]].now() shouldBe empty
   }
+
+  "initCurrentSource" should "fetch the current radio source from the server" in {
+    val currentSourceState = DummyUIModel.CurrentSource
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(currentSourceState)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(currentSourceState)))
+  }
+
+  it should "record an exception when loading the current radio source from the server" in {
+    val exception = new IllegalStateException("Test exception when loading the current radio source.")
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.failed(exception)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+  }
+
+  it should "initially have a value of None" in {
+    val model = new DefaultUIModel(new RadioService(ServiceUrl))
+
+    model.currentSourceStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
+      .now() shouldBe empty
+  }
