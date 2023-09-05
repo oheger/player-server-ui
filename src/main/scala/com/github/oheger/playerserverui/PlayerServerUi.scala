@@ -29,6 +29,7 @@ def PlayerServerUi(): Unit =
     dom.document.getElementById("app"),
     Main.appElement()
   )
+  Main.refreshUi()
 end PlayerServerUi
 
 object Main:
