@@ -20,7 +20,7 @@ import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService.{CurrentSourceState, mapException}
 import sttp.client3.*
 import sttp.client3.ziojson.*
-import sttp.model.StatusCode
+import sttp.model.{StatusCode, Uri}
 import zio.json.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -67,7 +67,7 @@ end RadioService
  * @param backend the backend for sending HTTP requests
  * @param baseUrl the base URL of the player server
  */
-class RadioService(backend: SttpBackend[Future, Any], baseUrl: String) {
+class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
   def this(baseUrl: String) = this(FetchBackend(), baseUrl)
 
   /**
@@ -76,7 +76,7 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String) {
    * @return a ''Future'' with the radio sources
    */
   def loadRadioSources(): Future[RadioModel.RadioSources] = mapException {
-    basicRequest.get(uri"$baseUrl/api/sources")
+    basicRequest.get(serverUri("/sources"))
       .response(asJson[RadioModel.RadioSources].getRight)
       .send(backend).map(_.body)
   }
@@ -87,7 +87,7 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String) {
    * @return a ''Future'' with information about the current source
    */
   def loadCurrentSource(): Future[CurrentSourceState] = mapException {
-    val futCurrentSource = basicRequest.get(uri"$baseUrl/api/sources/current")
+    val futCurrentSource = basicRequest.get(serverUri("/sources/current"))
       .response(asString.getRight)
       .send(backend).map { response =>
         response.code match
@@ -96,7 +96,7 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String) {
             case Left(value) => throw new IllegalStateException("JSON decoding failed: " + value)
             case Right(value) => Some(value)
       }
-    val futPlaybackState = basicRequest.get(uri"$baseUrl/api/playback")
+    val futPlaybackState = basicRequest.get(serverUri("/playback"))
       .response(asJson[RadioModel.PlaybackStatus].getRight)
       .send(backend).map(_.body)
 
@@ -105,4 +105,13 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String) {
       playbackState <- futPlaybackState
     yield CurrentSourceState(currentSource, playbackState.enabled)
   }
-}
+
+  /**
+   * Generates a URI for calling the radio server API.
+   *
+   * @param subPath the sub path to be invoked
+   * @return the resulting URI
+   */
+  private def serverUri(subPath: String): Uri =
+    val uriStr = s"$baseUrl/api/radio$subPath"
+    uri"$uriStr"
