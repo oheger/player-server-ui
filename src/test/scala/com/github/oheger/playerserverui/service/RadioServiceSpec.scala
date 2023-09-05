@@ -55,7 +55,7 @@ object RadioServiceSpec:
   private def checkUri(request: Request[?, ?])(f: Seq[String] => Boolean): Boolean =
     val uri = request.uri
     uri.scheme.contains(Scheme) && uri.host.contains(ServerHost) && uri.port.contains(ServerPort) &&
-      uri.path.startsWith(List("api")) && f(uri.path.tail)
+      uri.path.startsWith(List("api", "radio")) && f(uri.path.drop(2))
 
   /**
    * Waits for the given object to complete and returns its value or throws an
