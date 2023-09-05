@@ -17,6 +17,7 @@
 package com.github.oheger.playerserverui
 
 import com.github.oheger.playerserverui.model.RadioModel
+import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
@@ -124,5 +125,9 @@ private class UIModelTestImpl extends UIModel:
 
   override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = radioSources.signal
 
+  override def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] = ???
+
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
+
+  override def initCurrentSource(): Unit = ???
