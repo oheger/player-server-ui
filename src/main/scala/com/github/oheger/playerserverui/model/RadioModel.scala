@@ -25,6 +25,14 @@ import zio.json.{DeriveJsonDecoder, JsonDecoder}
  */
 object RadioModel:
   /**
+   * A data class representing the current playback status of the radio
+   * player.
+   *
+   * @param enabled a flag whether playback is currently enabled
+   */
+  final case class PlaybackStatus(enabled: Boolean)
+
+  /**
    * A data class representing a radio source.
    *
    * @param id      an internal ID assigned to the radio source
@@ -43,6 +51,7 @@ object RadioModel:
    */
   final case class RadioSources(sources: List[RadioSource])
 
+  implicit val playbackStatusDecoder: JsonDecoder[PlaybackStatus] = DeriveJsonDecoder.gen[PlaybackStatus]
   implicit val radioSourceDecoder: JsonDecoder[RadioSource] = DeriveJsonDecoder.gen[RadioSource]
   implicit val radioSourcesDecoder: JsonDecoder[RadioSources] = DeriveJsonDecoder.gen[RadioSources]
-  
+
