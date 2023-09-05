@@ -142,3 +142,127 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
     futEx map { ex => ex.cause should be(exception) }
   }
+
+  it should "return information about the current source" in {
+    val currentSource =
+      """
+        |{
+        |  "id": "id1",
+        |  "name": "currentSource",
+        |  "ranking": 10
+        |}
+        |""".stripMargin
+    val playbackState =
+      """
+        |{
+        |  "enabled": false
+        |}
+        |""".stripMargin
+    val expCurrentSource = RadioModel.RadioSource("id1", "currentSource", 10)
+    val expCurrentState = RadioService.CurrentSourceState(Some(expCurrentSource), playbackEnabled = false)
+
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
+      }.thenRespond(currentSource)
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
+      }.thenRespond(playbackState)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    service.loadCurrentSource() map { currentStateResult =>
+      currentStateResult should be(expCurrentState)
+    }
+  }
+
+  it should "handle an undefined current source" in {
+    val playbackState =
+      """
+        |{
+        |  "enabled": true
+        |}
+        |""".stripMargin
+    val expCurrentState = RadioService.CurrentSourceState(None, playbackEnabled = true)
+
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
+      }.thenRespond("", StatusCode.NoContent)
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
+      }.thenRespond(playbackState)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    service.loadCurrentSource() map { currentStateResult =>
+      currentStateResult should be(expCurrentState)
+    }
+  }
+
+  it should "handle a failure status when querying the current source status" in {
+    val playbackState =
+      """
+        |{
+        |  "enabled": true
+        |}
+        |""".stripMargin
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
+      }.thenRespond(playbackState)
+      .whenRequestMatches { _ => true }
+      .thenRespond(Response("", StatusCode.BadRequest))
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[HttpError[_]] {
+      service.loadCurrentSource()
+    }
+
+    futEx map { ex => ex.getMessage should include(StatusCode.BadRequest.code.toString) }
+  }
+
+  it should "handle a failed future when querying the current source status" in {
+    val playbackState =
+      """
+        |{
+        |  "enabled": true
+        |}
+        |""".stripMargin
+    val exception = new IOException("test exception")
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
+      }.thenRespond(playbackState)
+      .whenRequestMatches { _ => true }
+      .thenRespond(throw exception)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[SttpClientException] {
+      service.loadCurrentSource()
+    }
+
+    futEx map { ex => ex.cause should be(exception) }
+  }
+
+  it should "handle invalid JSON for the current source" in {
+    val playbackState =
+      """
+        |{
+        |  "enabled": true
+        |}
+        |""".stripMargin
+
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
+      }.thenRespond("Invalid JSON")
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
+      }.thenRespond(playbackState)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[IllegalStateException] {
+      service.loadCurrentSource()
+    }
+
+    futEx map { ex => ex.getMessage should include("JSON decoding failed") }
+  }
