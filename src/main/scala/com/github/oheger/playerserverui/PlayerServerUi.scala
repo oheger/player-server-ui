@@ -39,6 +39,7 @@ object Main:
   def appElement(): Element =
     div(
       h1("PlayerServer UI"),
+      currentSourceElement(),
       radioSourcesElement()
     )
   end appElement
@@ -51,6 +52,7 @@ object Main:
    */
   private[playerserverui] def refreshUi(model: UIModel = uiModel): Unit =
     model.initRadioSources()
+    model.initCurrentSource()
 
   /**
    * Returns an element that displays the currently available radio sources.
@@ -63,6 +65,31 @@ object Main:
       children <-- model.radioSourcesSignal.map {
         case Some(Success(sources)) =>
           sources.sources.map(renderRadioSource)
+        case Some(Failure(exception)) =>
+          List(p(className := "error", exception.getMessage))
+        case None =>
+          List(img(src := "/loading.gif", alt := "Loading"))
+      }
+    )
+
+  /**
+   * Returns an element that displays information about the current radio
+   * source. The name of the current source - if any - is shown, also a button
+   * for pause or start playback.
+   *
+   * @param model the UI model
+   * @return the element to display the current radio source
+   */
+  private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
+    div(
+      children <-- model.currentSourceStateSignal.map {
+        case Some(Success(RadioService.CurrentSourceState(optSource, playbackEnabled))) =>
+          optSource match
+            case Some(source) =>
+              val icon = if (playbackEnabled) img(src := "/playback-stop.png", alt := "Stop playback")
+              else img(src := "/playback-start.png", alt := "Start playback")
+              List(p(source.name), icon)
+            case None => List.empty
         case Some(Failure(exception)) =>
           List(p(className := "error", exception.getMessage))
         case None =>
