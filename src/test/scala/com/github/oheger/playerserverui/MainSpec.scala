@@ -60,6 +60,14 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model.initRadioSourcesCount should be(1)
   }
 
+  it should "initialize the current source" in {
+    val model = new UIModelTestImpl
+
+    Main.refreshUi(model)
+
+    model.initCurrentSourceCount should be(1)
+  }
+
   "radioSourcesElement" should "display all available radio sources" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
@@ -82,12 +90,60 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
     testDom(element) {
       $(element.ref).find("p").length should be(1)
-      $(element.ref).find(s"p.error:contains('$message')")
+      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
     }
   }
 
   it should "show a progress indicator while loading data" in {
     val element = Main.radioSourcesElement(new UIModelTestImpl)
+
+    testDom(element) {
+      $(element.ref).find("img[src='/loading.gif']").length should be(1)
+    }
+  }
+
+  "currentSourceElement" should "display the current radio source" in {
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      val nodes = $(element.ref).find(s"p:contains('${DummyUIModel.CurrentSource.optCurrentSource.get.name}')")
+      nodes.length should be(1)
+      $(element.ref).find("img[src='/playback-stop.png']").length should be(1)
+      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
+      $(element.ref).find("img[src='/loading.gif']").length should be(0)
+    }
+  }
+
+  it should "not display anything if no current source is selected" in {
+    val currentSource = RadioService.CurrentSourceState(None, playbackEnabled = true)
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Success(currentSource)
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
+      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
+    }
+  }
+
+  it should "show an error message if the current source could not be loaded" in {
+    val message = "Failure while loading the current source"
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Failure(new IllegalStateException(message))
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
+      $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
+      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
+      $(element.ref).find("img[src='/loading.gif']").length should be(0)
+    }
+  }
+
+  it should "show a progress indicator while loading data" in {
+    val element = Main.currentSourceElement(new UIModelTestImpl)
 
     testDom(element) {
       $(element.ref).find("img[src='/loading.gif']").length should be(1)
@@ -103,8 +159,14 @@ private class UIModelTestImpl extends UIModel:
   /** Stores the current state of radio sources. */
   private val radioSources: Var[Option[Try[RadioModel.RadioSources]]] = Var(None)
 
+  /** Stores the state of the current radio source. */
+  private val currentSource: Var[Option[Try[RadioService.CurrentSourceState]]] = Var(None)
+
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
+
+  /** A counter for the invocations of ''initCurrentSource()''. */
+  var initCurrentSourceCount = 0
 
   /**
    * Sets the value for the current radio sources. Here a ''Try'' can be
@@ -123,11 +185,20 @@ private class UIModelTestImpl extends UIModel:
   def setRadioSources(sources: RadioModel.RadioSources): Unit =
     setTriedRadioSources(Success(sources))
 
+  /**
+   * Sets the data about the current radio source to the given object.
+   *
+   * @param triedSource the ''Try'' with data about the current source
+   */
+  def setTriedCurrentSource(triedSource: Try[RadioService.CurrentSourceState]): Unit =
+    currentSource set Some(triedSource)
+
   override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = radioSources.signal
 
-  override def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] = ???
+  override def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] = currentSource.signal
 
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
 
-  override def initCurrentSource(): Unit = ???
+  override def initCurrentSource(): Unit =
+    initCurrentSourceCount += 1
