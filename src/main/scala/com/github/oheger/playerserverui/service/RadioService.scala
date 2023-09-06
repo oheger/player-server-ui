@@ -107,6 +107,30 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
   }
 
   /**
+   * Calls the server API to start radio playback and returns a ''Future'' to
+   * check whether this was successful.
+   *
+   * @return a ''Future'' with the outcome of this operation
+   */
+  def startPlayback(): Future[Unit] = mapException {
+    basicRequest.post(serverUri("/playback/start"))
+      .response(asString.getRight)
+      .send(backend) map { _ => () }
+  }
+
+  /**
+   * Calls the server API to stop radio playback and returns a ''Future'' to
+   * check whether this was successful.
+   *
+   * @return a ''Future'' with the outcome of this operation
+   */
+  def stopPlayback(): Future[Unit] = mapException {
+    basicRequest.post(serverUri("/playback/stop"))
+      .response(asString.getRight)
+      .send(backend) map { _ => () }
+  }
+
+  /**
    * Generates a URI for calling the radio server API.
    *
    * @param subPath the sub path to be invoked
