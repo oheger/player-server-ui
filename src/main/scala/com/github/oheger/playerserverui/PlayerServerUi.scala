@@ -61,16 +61,9 @@ object Main:
    * @return the element to display the radio sources
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
-    div(
-      children <-- model.radioSourcesSignal.map {
-        case Some(Success(sources)) =>
-          sources.sources.map(renderRadioSource)
-        case Some(Failure(exception)) =>
-          List(p(className := "error", exception.getMessage))
-        case None =>
-          List(img(src := "/loading.gif", alt := "Loading"))
-      }
-    )
+    elementWithErrorAndLoadingIndicator(model.radioSourcesSignal) { sources =>
+      sources.sources.map(renderRadioSource)
+    }
 
   /**
    * Returns an element that displays information about the current radio
@@ -81,21 +74,13 @@ object Main:
    * @return the element to display the current radio source
    */
   private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
-    div(
-      children <-- model.currentSourceStateSignal.map {
-        case Some(Success(RadioService.CurrentSourceState(optSource, playbackEnabled))) =>
-          optSource match
-            case Some(source) =>
-              val icon = if (playbackEnabled) img(src := "/playback-stop.png", alt := "Stop playback")
-              else img(src := "/playback-start.png", alt := "Start playback")
-              List(p(source.name), icon)
-            case None => List.empty
-        case Some(Failure(exception)) =>
-          List(p(className := "error", exception.getMessage))
-        case None =>
-          List(img(src := "/loading.gif", alt := "Loading"))
+    elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceState =>
+      currentSourceState.optCurrentSource.fold(List.empty) { source =>
+        val icon = if (currentSourceState.playbackEnabled) img(src := "/playback-stop.png", alt := "Stop playback")
+        else img(src := "/playback-start.png", alt := "Start playback")
+        List(p(source.name), icon)
       }
-    )
+    }
 
   /**
    * Generates an element for the specified radio source.
@@ -105,6 +90,30 @@ object Main:
    */
   private def renderRadioSource(source: RadioModel.RadioSource): Element =
     p(source.name)
+
+  /**
+   * Creates an [[Element]] for a [[Signal]] that shows a loading or an error
+   * indicator if needed. This function evaluates the given signal. If it is in
+   * a special state, it produces corresponding UI elements. Otherwise, it
+   * calls the given function to generate the UI for the normal state.
+   *
+   * @param signal the [[Signal]] to display
+   * @param data   a function for handling the normal state
+   * @tparam A the data type of the signal
+   * @return an [[Element]] to display this signal
+   */
+  private def elementWithErrorAndLoadingIndicator[A](signal: Signal[Option[Try[A]]])
+                                                    (data: A => List[Element]): Element =
+    div(
+      children <-- signal.map {
+        case None =>
+          List(img(src := "/loading.gif", alt := "Loading"))
+        case Some(Failure(exception)) =>
+          List(p(className := "error", exception.getMessage))
+        case Some(Success(value)) =>
+          data(value)
+      }
+    )
 
   /**
    * Creates the UI model for this application. Per default, a model
