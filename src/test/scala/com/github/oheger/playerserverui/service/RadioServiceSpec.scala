@@ -266,3 +266,54 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
     futEx map { ex => ex.getMessage should include("JSON decoding failed") }
   }
+
+  it should "start radio playback" in {
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback", "start")) && request.method == Method.POST
+      }.thenRespond("", StatusCode.Ok)
+
+    val service = new RadioService(testBackend, BaseUrl)
+
+    service.startPlayback().map(_ should be(()))
+  }
+
+  it should "handle an unexpected status code when starting radio playback" in {
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback", "start")) && request.method == Method.POST
+      }.thenRespond("", StatusCode.InternalServerError)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[HttpError[_]] {
+      service.startPlayback()
+    }
+
+    futEx map { ex => ex.getMessage should include(StatusCode.InternalServerError.code.toString) }
+  }
+
+  it should "stop radio playback" in {
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback", "stop")) && request.method == Method.POST
+      }.thenRespond("", StatusCode.Ok)
+
+    val service = new RadioService(testBackend, BaseUrl)
+
+    service.stopPlayback().map(_ should be(()))
+  }
+
+  it should "handle an exception when stopping radio playback" in {
+    val exception = new IOException("Test exception when stopping playback.")
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("playback", "stop")) && request.method == Method.POST
+      }.thenRespond(throw exception)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[SttpClientException] {
+      service.stopPlayback()
+    }
+
+    futEx map { ex => ex.getCause should be(exception) }
+  }
