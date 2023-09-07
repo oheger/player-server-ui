@@ -62,3 +62,7 @@ object DummyUIModel extends UIModel:
   override def initRadioSources(): Unit = {}
 
   override def initCurrentSource(): Unit = {}
+
+  override def startRadioPlayback(): Unit = {}
+
+  override def stopRadioPlayback(): Unit = {}

@@ -202,3 +202,7 @@ private class UIModelTestImpl extends UIModel:
 
   override def initCurrentSource(): Unit =
     initCurrentSourceCount += 1
+
+  override def startRadioPlayback(): Unit = ???
+
+  override def stopRadioPlayback(): Unit = ???
