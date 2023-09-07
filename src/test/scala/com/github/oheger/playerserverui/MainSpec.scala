@@ -149,6 +149,30 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find("img[src='/loading.gif']").length should be(1)
     }
   }
+
+  it should "provide a control to start radio playback" in {
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Success(DummyUIModel.CurrentSource.copy(playbackEnabled = false))
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      $(element.ref).find("img[src='/playback-start.png']").trigger("click")
+
+      model.startRadioPlaybackCount should be(1)
+    }
+  }
+
+  it should "provide a control to stop radio playback" in {
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      $(element.ref).find("img[src='/playback-stop.png']").trigger("click")
+
+      model.stopRadioPlaybackCount should be(1)
+    }
+  }
 end MainSpec
 
 /**
@@ -167,6 +191,12 @@ private class UIModelTestImpl extends UIModel:
 
   /** A counter for the invocations of ''initCurrentSource()''. */
   var initCurrentSourceCount = 0
+
+  /** A counter for the invocations of ''startRadioPlayback()''. */
+  var startRadioPlaybackCount = 0
+
+  /** A counter for the invocations of stopRadioPlayback(). */
+  var stopRadioPlaybackCount = 0
 
   /**
    * Sets the value for the current radio sources. Here a ''Try'' can be
@@ -203,6 +233,8 @@ private class UIModelTestImpl extends UIModel:
   override def initCurrentSource(): Unit =
     initCurrentSourceCount += 1
 
-  override def startRadioPlayback(): Unit = ???
+  override def startRadioPlayback(): Unit =
+    startRadioPlaybackCount += 1
 
-  override def stopRadioPlayback(): Unit = ???
+  override def stopRadioPlayback(): Unit =
+    stopRadioPlaybackCount += 1

@@ -76,8 +76,18 @@ object Main:
   private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceState =>
       currentSourceState.optCurrentSource.fold(List.empty) { source =>
-        val icon = if (currentSourceState.playbackEnabled) img(src := "/playback-stop.png", alt := "Stop playback")
-        else img(src := "/playback-start.png", alt := "Start playback")
+        val icon = if (currentSourceState.playbackEnabled)
+          img(
+            src := "/playback-stop.png",
+            alt := "Stop playback",
+            onClick --> { _ => model.stopRadioPlayback() }
+          )
+        else
+          img(
+            src := "/playback-start.png",
+            alt := "Start playback",
+            onClick --> { _ => model.startRadioPlayback() }
+          )
         List(p(source.name), icon)
       }
     }
