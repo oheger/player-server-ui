@@ -21,7 +21,7 @@ import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
  * A class storing the state of the player server UI.
@@ -56,3 +56,31 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     radioService.loadCurrentSource() onComplete { triedCurrentSource =>
       currentSourceVar.set(Some(triedCurrentSource))
     }
+
+  override def startRadioPlayback(): Unit =
+    radioService.startPlayback() onComplete { res =>
+      updatePlaybackState(res, playbackEnabled = true)
+    }
+
+  override def stopRadioPlayback(): Unit =
+    radioService.stopPlayback() onComplete { res =>
+      updatePlaybackState(res, playbackEnabled = false)
+    }
+
+  /**
+   * Changes the playback state to the given value. This function is called
+   * when the user has started or stopped playback.
+   *
+   * @param triedResult     the outcome of the change operation
+   * @param playbackEnabled the new playback enabled state
+   */
+  private def updatePlaybackState(triedResult: Try[Unit], playbackEnabled: Boolean): Unit =
+    triedResult match
+      case Success(_) =>
+        currentSourceVar.update { optState =>
+          optState.map { triedState =>
+            triedState.map(_.copy(playbackEnabled = playbackEnabled))
+          }
+        }
+      case Failure(exception) =>
+        currentSourceVar set Some(Failure(exception))

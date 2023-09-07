@@ -56,3 +56,14 @@ trait UIModel:
    * the signal for this state to be updated.
    */
   def initCurrentSource(): Unit
+
+  /**
+   * Sends a command to the server to start radio playback.
+   */
+  def startRadioPlayback(): Unit
+
+  /**
+   * Sends a command to the server to stop radio playback.
+   */
+  def stopRadioPlayback(): Unit
+  

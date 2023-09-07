@@ -154,3 +154,73 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     model.currentSourceStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
       .now() shouldBe empty
   }
+
+  "startRadioPlayback" should "update the playback state" in {
+    val currentSourceState = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(currentSourceState)
+
+      override def startPlayback(): Future[Unit] =
+        Future.successful(())
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+    model.startRadioPlayback()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.CurrentSource)))
+  }
+
+  it should "handle a failed update" in {
+    val exception = new IllegalStateException("Test exception when starting playback.")
+    val currentSourceState = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(currentSourceState)
+
+      override def startPlayback(): Future[Unit] =
+        Future.failed(exception)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+    model.startRadioPlayback()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+  }
+
+  "stopRadioPlayback" should "update the playback state" in {
+    val expCurrentSource = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(DummyUIModel.CurrentSource)
+
+      override def stopPlayback(): Future[Unit] =
+        Future.successful(())
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+    model.stopRadioPlayback()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(expCurrentSource)))
+  }
+
+  it should "handle a failed update" in {
+    val exception = new IllegalStateException("Test exception when stopping playback.")
+    val expCurrentSource = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(DummyUIModel.CurrentSource)
+
+      override def stopPlayback(): Future[Unit] =
+        Future.failed(exception)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initCurrentSource()
+    model.stopRadioPlayback()
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+  }
