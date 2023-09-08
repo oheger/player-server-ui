@@ -110,8 +110,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     testDom(element) {
       val nodes = $(element.ref).find(s"p:contains('${DummyUIModel.CurrentSource.optCurrentSource.get.name}')")
       nodes.length should be(1)
-      $(element.ref).find("img[src='/playback-stop.png']").length should be(1)
-      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
+      $(element.ref).find("img[src='/playback-stop.svg']").length should be(1)
+      $(element.ref).find("img[src='/playback-start.svg']").length should be(1)
       $(element.ref).find("img[src='/loading.gif']").length should be(0)
     }
   }
@@ -150,27 +150,31 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
-  it should "provide a control to start radio playback" in {
+  it should "enable the button to start radio playback" in {
     val model = new UIModelTestImpl
     model setTriedCurrentSource Success(DummyUIModel.CurrentSource.copy(playbackEnabled = false))
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
-      $(element.ref).find("img[src='/playback-start.png']").trigger("click")
+      $(element.ref).find("#btnStartRadioPlayback:enabled").trigger("click")
 
       model.startRadioPlaybackCount should be(1)
+
+      $(element.ref).find("#btnStopRadioPlayback:disabled").length should be(1)
     }
   }
 
-  it should "provide a control to stop radio playback" in {
+  it should "enable the button to stop radio playback" in {
     val model = new UIModelTestImpl
     model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
-      $(element.ref).find("img[src='/playback-stop.png']").trigger("click")
+      $(element.ref).find("#btnStopRadioPlayback:enabled").trigger("click")
 
       model.stopRadioPlaybackCount should be(1)
+
+      $(element.ref).find("#btnStartRadioPlayback:disabled").length should be(1)
     }
   }
 end MainSpec
