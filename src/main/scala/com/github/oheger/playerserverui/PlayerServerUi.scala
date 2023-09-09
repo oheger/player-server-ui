@@ -61,8 +61,8 @@ object Main:
    * @return the element to display the radio sources
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.radioSourcesSignal) { sources =>
-      sources.sources.map(renderRadioSource)
+    elementWithErrorAndLoadingIndicator(model.radioSourcesSignal) { sourcesSignal =>
+      sourcesSignal.map { sources => sources.sources.map(renderRadioSource) }
     }
 
   /**
@@ -74,44 +74,47 @@ object Main:
    * @return the element to display the current radio source
    */
   private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceState =>
-      def iconClass(stop: Boolean): String =
-        val baseClass = "btnIcon"
-        if currentSourceState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
+    elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceStateSignal =>
+      currentSourceStateSignal.map { currentSourceState =>
 
-      currentSourceState.optCurrentSource.fold(List.empty) { source =>
-        val btnStartPlayback =
-          button(
-            idAttr := "btnStartRadioPlayback",
-            onClick --> { _ => model.startRadioPlayback() },
-            disabled := currentSourceState.playbackEnabled,
-            img(
-              src := "/playback-start.svg",
-              alt := "Start playback",
-              className := iconClass(stop = false)
+        def iconClass(stop: Boolean): String =
+          val baseClass = "btnIcon"
+          if currentSourceState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
+
+        currentSourceState.optCurrentSource.fold(List.empty) { source =>
+          val btnStartPlayback =
+            button(
+              idAttr := "btnStartRadioPlayback",
+              onClick --> { _ => model.startRadioPlayback() },
+              disabled := currentSourceState.playbackEnabled,
+              img(
+                src := "/playback-start.svg",
+                alt := "Start playback",
+                className := iconClass(stop = false)
+              )
             )
+
+          val btnStopPlayback =
+            button(
+              idAttr := "btnStopRadioPlayback",
+              onClick --> { _ => model.stopRadioPlayback() },
+              disabled := !currentSourceState.playbackEnabled,
+              img(
+                src := "/playback-stop.svg",
+                alt := "Stop playback",
+                className := iconClass(stop = true)
+              )
+            )
+
+          val divCurrentSource = div(
+            idAttr := "currentSource",
+            p(source.name),
+            btnStartPlayback,
+            btnStopPlayback
           )
 
-        val btnStopPlayback =
-          button(
-            idAttr := "btnStopRadioPlayback",
-            onClick --> { _ => model.stopRadioPlayback() },
-            disabled := !currentSourceState.playbackEnabled,
-            img(
-              src := "/playback-stop.svg",
-              alt := "Stop playback",
-              className := iconClass(stop = true)
-            )
-          )
-
-        val divCurrentSource = div(
-          idAttr := "currentSource",
-          p(source.name),
-          btnStartPlayback,
-          btnStopPlayback
-        )
-
-        List(divCurrentSource)
+          List(divCurrentSource)
+        }
       }
     }
 
@@ -136,15 +139,15 @@ object Main:
    * @return an [[Element]] to display this signal
    */
   private def elementWithErrorAndLoadingIndicator[A](signal: Signal[Option[Try[A]]])
-                                                    (data: A => List[Element]): Element =
+                                                    (data: Signal[A] => Signal[List[Element]]): Element =
     div(
-      children <-- signal.map {
+      children <-- signal.flatMap {
         case None =>
-          List(img(src := "/loading.gif", alt := "Loading"))
+          Signal.fromValue(List(img(src := "/loading.gif", alt := "Loading")))
         case Some(Failure(exception)) =>
-          List(p(className := "error", exception.getMessage))
+          Signal.fromValue(List(p(className := "error", exception.getMessage)))
         case Some(Success(value)) =>
-          data(value)
+          data(Signal.fromValue(value))
       }
     )
 
