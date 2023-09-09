@@ -161,6 +161,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
       model.startRadioPlaybackCount should be(1)
 
       $(element.ref).find("#btnStopRadioPlayback:disabled").length should be(1)
+      $(element.ref).find("img.btnIconDisabled[src='/playback-start.svg']").length should be(0)
+      $(element.ref).find("img.btnIconDisabled[src='/playback-stop.svg']").length should be(1)
     }
   }
 
@@ -175,6 +177,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
       model.stopRadioPlaybackCount should be(1)
 
       $(element.ref).find("#btnStartRadioPlayback:disabled").length should be(1)
+      $(element.ref).find("img.btnIconDisabled[src='/playback-stop.svg']").length should be(0)
+      $(element.ref).find("img.btnIconDisabled[src='/playback-start.svg']").length should be(1)
     }
   }
 end MainSpec

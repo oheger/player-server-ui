@@ -61,6 +61,14 @@ button:focus-visible {
   margin-right: 5px;
 }
 
+.btnIcon {
+  height: 1.5em;
+}
+
+.btnIconDisabled {
+  opacity: 0.25;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
