@@ -75,6 +75,10 @@ object Main:
    */
   private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceState =>
+      def iconClass(stop: Boolean): String =
+        val baseClass = "btnIcon"
+        if currentSourceState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
+
       currentSourceState.optCurrentSource.fold(List.empty) { source =>
         val btnStartPlayback =
           button(
@@ -84,7 +88,7 @@ object Main:
             img(
               src := "/playback-start.svg",
               alt := "Start playback",
-              height := "1.5em"
+              className := iconClass(stop = false)
             )
           )
 
@@ -96,7 +100,7 @@ object Main:
             img(
               src := "/playback-stop.svg",
               alt := "Stop playback",
-              height := "1.5em"
+              className := iconClass(stop = true)
             )
           )
 
