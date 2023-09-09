@@ -38,7 +38,7 @@ object DummyUIModel extends UIModel:
       RadioModel.RadioSource("s5", "Radio Active", 3),
       RadioModel.RadioSource("s6", "AFN", 2),
       RadioModel.RadioSource("s7", "FOO", 0),
-      RadioModel.RadioSource("s8", "BAR", 0),
+      RadioModel.RadioSource("s8", "bar", 0),
     )
   )
 

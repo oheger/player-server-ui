@@ -37,6 +37,25 @@ trait UIModel:
   def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]]
 
   /**
+   * Returns a signal for the current list of radio sources that is sorted by
+   * the criteria selected by the user. Currently, the list of radio sources is
+   * ordered by ranking; later, other sort criteria may be supported.
+   *
+   * @return the signal with the sorted list of radio sources
+   */
+  def sortedRadioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] =
+    radioSourcesSignal.map { optSources =>
+      optSources map { triedSources =>
+        triedSources map { sources =>
+          sources.copy(sources = sources.sources.sortWith { (src1, src2) =>
+            (src1.ranking > src2.ranking) ||
+              (src1.ranking == src2.ranking && src1.name.compareToIgnoreCase(src2.name) < 0)
+          })
+        }
+      }
+    }
+
+  /**
    * Returns a signal for the playback state of the current radio source. This
    * can be used to display the current radio source and whether playback is
    * currently active. The signal supports default loading and error handling.

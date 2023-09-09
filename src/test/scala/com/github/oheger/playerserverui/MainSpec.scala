@@ -82,6 +82,24 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
+  it should "order radio sources by their ranking per default" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) {
+      val elements = $(element.ref).find("p")
+
+      def assertSourceAt(index: Int, name: String): Unit =
+        elements.get(index).get.textContent should include(name)
+
+      assertSourceAt(0, "Rock Antenne")
+      assertSourceAt(1, "SWR 1")
+      assertSourceAt(6, "bar")
+      assertSourceAt(7, "FOO")
+    }
+  }
+
   it should "show an error message if the sources could not be loaded" in {
     val message = "Failure while loading radio sources"
     val model = new UIModelTestImpl
