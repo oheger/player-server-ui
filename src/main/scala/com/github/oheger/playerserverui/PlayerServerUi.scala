@@ -61,7 +61,7 @@ object Main:
    * @return the element to display the radio sources
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.radioSourcesSignal) { sourcesSignal =>
+    elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal) { sourcesSignal =>
       sourcesSignal.map {
           _.sources
         }
