@@ -74,11 +74,11 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) {
-      $(element.ref).find("p").length should be(DummyUIModel.DummyRadioSources.sources.size)
+      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
       DummyUIModel.DummyRadioSources.sources foreach { source =>
-        $(element.ref).find(s"p:contains('${source.name}')").length should be(1)
+        $(element.ref).find(s"td:contains('${source.name}')").length should be(1)
       }
-      $(element.ref).find("img").length should be(0)
+      $(element.ref).find("img[src='/loading.gif']").length should be(0)
     }
   }
 
@@ -88,7 +88,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) {
-      val elements = $(element.ref).find("p")
+      val elements = $(element.ref).find("tr")
 
       def assertSourceAt(index: Int, name: String): Unit =
         elements.get(index).get.textContent should include(name)

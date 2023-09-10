@@ -69,6 +69,23 @@ button:focus-visible {
   opacity: 0.25;
 }
 
+#radioSources {
+  width: 100%;
+  padding: 2em;
+}
+
+#radioSourcesTable {
+  margin: 0 auto;
+}
+
+.radioSourceIcon {
+  height: 1em;
+}
+
+.radioSourceItem {
+  min-height: 1.5em
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
