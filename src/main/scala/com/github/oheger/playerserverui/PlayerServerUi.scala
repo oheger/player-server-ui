@@ -62,15 +62,17 @@ object Main:
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal) { sourcesSignal =>
+      val rankingStepSignal = sourcesSignal.map(sources => (sources.sources.map(_.ranking).max + 1) / 4.0)
+
       val sourcesElement = div(idAttr := "radioSources",
         table(idAttr := "radioSourcesTable",
-          tbody (
-          children <-- sourcesSignal.map {
-              _.sources
-            }
-            .split(_.id) { (_, _, sourceSignal) =>
-              renderRadioSource(sourceSignal)
-            }
+          tbody(
+            children <-- sourcesSignal.map {
+                _.sources
+              }
+              .split(_.id) { (_, _, sourceSignal) =>
+                renderRadioSource(sourceSignal, rankingStepSignal)
+              }
           )
         )
       )
@@ -133,18 +135,30 @@ object Main:
   /**
    * Generates an element for the specified radio source.
    *
-   * @param sourceSignal the signal for the radio source to be rendered
+   * @param sourceSignal      the signal for the radio source to be rendered
+   * @param rankingStepSignal the signal for the mapping of the ranking to
+   *                          style classes
    * @return the element representing this radio source
    */
-  private def renderRadioSource(sourceSignal: Signal[RadioModel.RadioSource]): Element =
-    tr(
+  private def renderRadioSource(sourceSignal: Signal[RadioModel.RadioSource],
+                                rankingStepSignal: Signal[Double]): Element =
+    val styleClassIdxSignal = for
+      ranking <- sourceSignal.map(_.ranking)
+      rankingStep <- rankingStepSignal
+    yield math.floor(ranking / rankingStep).toInt
+    val iconClassSignal = styleClassIdxSignal.map(idx => s"radioSourceIcon$idx")
+    val itemClassSignal = styleClassIdxSignal.map(idx => s"radioSourceItem$idx")
+
+    tr(className <-- itemClassSignal,
       td(
         textAlign := "right",
-        img(src := "/source-icon.svg", className := "radioSourceIcon")
+        img(
+          src := "/source-icon.svg",
+          className <-- iconClassSignal
+        )
       ),
       td(
         div(
-          className := "radioSourceItem",
           child.text <-- sourceSignal.map(_.name)
         ),
       )
