@@ -76,14 +76,47 @@ button:focus-visible {
 
 #radioSourcesTable {
   margin: 0 auto;
+  border-collapse: collapse;
 }
 
-.radioSourceIcon {
+.radioSourceIcon3 {
+  height: 1.5em;
+}
+
+.radioSourceItem3 {
+  min-height: 2.4em;
+  font-size: 1.5em;
+  color: #729FCF;
+  background-color: #faea41;
+}
+
+.radioSourceIcon2 {
+  height: 1.3em;
+}
+
+.radioSourceItem2 {
+  min-height: 2.2em;
+  font-size: 1.3em;
+  background-color: #dbce3b;
+}
+
+.radioSourceIcon1 {
+  height: 1.2em;
+}
+
+.radioSourceItem1 {
+  min-height: 2.0em;
+  font-size: 1.2em;
+  background-color: #a69c2d;
+}
+
+.radioSourceIcon0 {
   height: 1em;
 }
 
-.radioSourceItem {
-  min-height: 1.5em
+.radioSourceItem0 {
+  min-height: 2.0em;
+  background-color: #29260c;
 }
 
 @media (prefers-color-scheme: light) {

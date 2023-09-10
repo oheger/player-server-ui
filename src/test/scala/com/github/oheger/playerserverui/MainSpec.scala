@@ -100,6 +100,27 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
+  it should "use different styles based on the ranking of radio sources" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) {
+      val elements = $(element.ref).find("tr")
+
+      def assertStyleClassAt(elementIndex: Int, classIndex: Int): Unit =
+        val trElement = elements.get(elementIndex).get
+        trElement.attributes.getNamedItem("class").value should be("radioSourceItem" + classIndex)
+        trElement.getElementsByClassName("radioSourceIcon" + classIndex).length should be(1)
+
+      assertStyleClassAt(0, 3)
+      assertStyleClassAt(1, 3)
+      assertStyleClassAt(2, 2)
+      assertStyleClassAt(6, 0)
+      assertStyleClassAt(7, 0)
+    }
+  }
+
   it should "show an error message if the sources could not be loaded" in {
     val message = "Failure while loading radio sources"
     val model = new UIModelTestImpl
