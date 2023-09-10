@@ -62,12 +62,19 @@ object Main:
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal) { sourcesSignal =>
-      sourcesSignal.map {
-          _.sources
-        }
-        .split(_.id) { (_, _, sourceSignal) =>
-          renderRadioSource(sourceSignal)
-        }
+      val sourcesElement = div(idAttr := "radioSources",
+        table(idAttr := "radioSourcesTable",
+          tbody (
+          children <-- sourcesSignal.map {
+              _.sources
+            }
+            .split(_.id) { (_, _, sourceSignal) =>
+              renderRadioSource(sourceSignal)
+            }
+          )
+        )
+      )
+      Signal.fromValue(List(sourcesElement))
     }
 
   /**
@@ -130,7 +137,18 @@ object Main:
    * @return the element representing this radio source
    */
   private def renderRadioSource(sourceSignal: Signal[RadioModel.RadioSource]): Element =
-    p(child.text <-- sourceSignal.map(_.name))
+    tr(
+      td(
+        textAlign := "right",
+        img(src := "/source-icon.svg", className := "radioSourceIcon")
+      ),
+      td(
+        div(
+          className := "radioSourceItem",
+          child.text <-- sourceSignal.map(_.name)
+        ),
+      )
+    )
 
   /**
    * Creates an [[Element]] for a [[Signal]] that shows a loading or an error
