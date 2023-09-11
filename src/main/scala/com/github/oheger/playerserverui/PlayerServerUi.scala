@@ -142,16 +142,19 @@ object Main:
    */
   private def renderRadioSource(sourceSignal: Signal[RadioModel.RadioSource],
                                 rankingStepSignal: Signal[Double]): Element =
+    val rankingSignal = sourceSignal.map(_.ranking)
     val styleClassIdxSignal = for
-      ranking <- sourceSignal.map(_.ranking)
+      ranking <- rankingSignal
       rankingStep <- rankingStepSignal
     yield math.floor(ranking / rankingStep).toInt
     val iconClassSignal = styleClassIdxSignal.map(idx => s"radioSourceIcon$idx")
     val itemClassSignal = styleClassIdxSignal.map(idx => s"radioSourceItem$idx")
+    val rankingTextSignal = rankingSignal.map(ranking => s"\u2606:$ranking")
 
     tr(className <-- itemClassSignal,
       td(
         textAlign := "right",
+        verticalAlign := "top",
         img(
           src := "/source-icon.svg",
           className <-- iconClassSignal
@@ -161,6 +164,10 @@ object Main:
         div(
           child.text <-- sourceSignal.map(_.name)
         ),
+        div(
+          className := "radioSourceRanking",
+          child.text <-- rankingTextSignal
+        )
       )
     )
 
