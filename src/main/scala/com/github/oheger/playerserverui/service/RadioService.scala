@@ -131,6 +131,20 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
   }
 
   /**
+   * Calls the server API to switch to another radio source and returns a
+   * ''Future'' to indicate whether this action was successful. The ID of the
+   * new current radio source must be provided.
+   *
+   * @param id the ID of the new radio source
+   * @return a ''Future'' with the outcome of this operation
+   */
+  def changeCurrentSource(id: String): Future[Unit] = mapException {
+    basicRequest.post(serverUri(s"/sources/current/$id"))
+      .response(asString.getRight)
+      .send(backend).map { _ => () }
+  }
+
+  /**
    * Generates a URI for calling the radio server API.
    *
    * @param subPath the sub path to be invoked
