@@ -67,6 +67,12 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
       updatePlaybackState(res, playbackEnabled = false)
     }
 
+  override def changeRadioSource(sourceID: String): Unit =
+    radioService.changeCurrentSource(sourceID) onComplete {
+      case Success(_) => initCurrentSource()
+      case Failure(exception) => currentSourceVar set Some(Failure(exception))
+    }
+
   /**
    * Changes the playback state to the given value. This function is called
    * when the user has started or stopped playback.

@@ -224,3 +224,33 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
     assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
   }
+
+  "changeRadioSource" should "change the current radio source successfully" in {
+    val newSourceID = "theNewCurrentRadioSource"
+    val service = new RadioService(ServiceUrl) {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(DummyUIModel.CurrentSource)
+
+      override def changeCurrentSource(id: String): Future[Unit] =
+        if id == newSourceID then Future.successful(())
+        else Future.failed(new IllegalArgumentException("Unexpected source ID: " + id))
+    }
+
+    val model = new DefaultUIModel(service)
+    model.changeRadioSource(newSourceID)
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.CurrentSource)))
+  }
+
+  it should "handle a failed change of the current radio source" in {
+    val exception = new IllegalStateException("Test exception when changing the radio source.")
+    val service = new RadioService(ServiceUrl) {
+      override def changeCurrentSource(id: String): Future[Unit] =
+        Future.failed(exception)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.changeRadioSource("someSourceID")
+
+    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+  }
