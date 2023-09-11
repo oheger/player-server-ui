@@ -304,3 +304,5 @@ private class UIModelTestImpl extends UIModel:
 
   override def stopRadioPlayback(): Unit =
     stopRadioPlaybackCount += 1
+
+  override def changeRadioSource(sourceID: String): Unit = ???

@@ -85,4 +85,13 @@ trait UIModel:
    * Sends a command to the server to stop radio playback.
    */
   def stopRadioPlayback(): Unit
+
+  /**
+   * Switches to another current radio source. Triggers a corresponding API
+   * call and updates the current source.
+   *
+   * @param sourceID the ID of the new radio source
+   */
+  def changeRadioSource(sourceID: String): Unit
+
   
