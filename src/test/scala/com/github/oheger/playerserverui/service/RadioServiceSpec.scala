@@ -317,3 +317,45 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
     futEx map { ex => ex.getCause should be(exception) }
   }
+
+  it should "switch to another radio source" in {
+    val RadioSourceID = "nextCurrentRadioSource"
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(path => path.toList == List("sources", "current", RadioSourceID)) &&
+          request.method == Method.POST
+      }.thenRespond("", StatusCode.Ok)
+
+    val service = new RadioService(testBackend, BaseUrl)
+
+    service.changeCurrentSource(RadioSourceID).map(_ should be(()))
+  }
+
+  it should "handle an unexpected status code when switching to another source" in {
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(_.toList.take(2) == List("sources", "current")) && request.method == Method.POST
+      }.thenRespond("", StatusCode.NotFound)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[HttpError[_]] {
+      service.changeCurrentSource("someSourceID")
+    }
+
+    futEx map { ex => ex.getMessage should include(StatusCode.NotFound.code.toString) }
+  }
+
+  it should "handle an exception when switching to another source" in {
+    val exception = new IOException("Test exception when switching to a radio source.")
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request)(_.toList.take(2) == List("sources", "current")) && request.method == Method.POST
+      }.thenRespond(throw exception)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[SttpClientException] {
+      service.changeCurrentSource("failureSource")
+    }
+
+    futEx map { ex => ex.getCause should be(exception) }
+  }
