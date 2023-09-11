@@ -84,7 +84,6 @@ button:focus-visible {
 }
 
 .radioSourceItem3 {
-  min-height: 2.4em;
   font-size: 1.5em;
   color: #729FCF;
   background-color: #faea41;
@@ -95,7 +94,6 @@ button:focus-visible {
 }
 
 .radioSourceItem2 {
-  min-height: 2.2em;
   font-size: 1.3em;
   background-color: #dbce3b;
 }
@@ -105,7 +103,6 @@ button:focus-visible {
 }
 
 .radioSourceItem1 {
-  min-height: 2.0em;
   font-size: 1.2em;
   background-color: #a69c2d;
 }
@@ -115,8 +112,13 @@ button:focus-visible {
 }
 
 .radioSourceItem0 {
-  min-height: 2.0em;
   background-color: #29260c;
+}
+
+.radioSourceRanking {
+  font-size: smaller;
+  font-weight: 100;
+  margin-bottom: 1.1em;
 }
 
 @media (prefers-color-scheme: light) {
