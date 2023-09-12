@@ -49,12 +49,12 @@ object DummyUIModel extends UIModel:
   )
 
   /** A static data object with the dummy radio sources data. */
-  private val sourcesVal = Val(Some(Success(DummyRadioSources)))
+  private val sourcesVal = Val(Some(Success(DummyRadioSources.sources)))
 
   /** A static data object with the current radio source state. */
   private val currentSourceStateVal = Val(Some(Success(CurrentSource)))
 
-  override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = sourcesVal.signal
+  override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = sourcesVal.signal
 
   override val currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] =
     currentSourceStateVal.signal

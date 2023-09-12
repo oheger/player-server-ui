@@ -100,7 +100,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.initRadioSources()
 
-    assertSignalValue(model.radioSourcesSignal, Some(Success(RadioModel.RadioSources(RadioSourcesList))))
+    assertSignalValue(model.radioSourcesSignal, Some(Success(RadioSourcesList)))
   }
 
   it should "record an exception when loading the radio sources from the server" in {

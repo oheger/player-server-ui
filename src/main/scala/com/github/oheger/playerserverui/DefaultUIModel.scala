@@ -30,13 +30,13 @@ import scala.util.{Failure, Success, Try}
  */
 class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** Stores the current list of radio sources. */
-  private val radioSourcesVar: Var[Option[Try[RadioModel.RadioSources]]] = Var(None)
+  private val radioSourcesVar: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
   /** Stores the state of the current radio source. */
   private val currentSourceVar: Var[Option[Try[RadioService.CurrentSourceState]]] = Var(None)
 
   /** Signal for the current list of radio sources. */
-  override val radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = radioSourcesVar.signal
+  override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
   override val currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] =
     currentSourceVar.signal
@@ -49,7 +49,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    */
   override def initRadioSources(): Unit =
     radioService.loadRadioSources() onComplete { triedSources =>
-      radioSourcesVar.set(Some(triedSources))
+      radioSourcesVar.set(Some(triedSources.map(_.sources)))
     }
 
   override def initCurrentSource(): Unit =
