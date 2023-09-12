@@ -34,7 +34,7 @@ trait UIModel:
    *
    * @return the signal with the current state of available radio sources
    */
-  def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]]
+  def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]]
 
   /**
    * Returns a signal for the current list of radio sources that is sorted by
@@ -43,14 +43,14 @@ trait UIModel:
    *
    * @return the signal with the sorted list of radio sources
    */
-  def sortedRadioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] =
+  def sortedRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
     radioSourcesSignal.map { optSources =>
       optSources map { triedSources =>
         triedSources map { sources =>
-          sources.copy(sources = sources.sources.sortWith { (src1, src2) =>
+          sources.sortWith { (src1, src2) =>
             (src1.ranking > src2.ranking) ||
               (src1.ranking == src2.ranking && src1.name.compareToIgnoreCase(src2.name) < 0)
-          })
+          }
         }
       }
     }

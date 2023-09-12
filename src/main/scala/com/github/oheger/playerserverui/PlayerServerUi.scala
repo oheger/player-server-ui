@@ -62,15 +62,12 @@ object Main:
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal) { sourcesSignal =>
-      val rankingStepSignal = sourcesSignal.map(sources => (sources.sources.map(_.ranking).max + 1) / 4.0)
+      val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
 
       val sourcesElement = div(idAttr := "radioSources",
         table(idAttr := "radioSourcesTable",
           tbody(
-            children <-- sourcesSignal.map {
-                _.sources
-              }
-              .split(_.id) { (id, _, sourceSignal) =>
+            children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>
                 renderRadioSource(model, id, sourceSignal, rankingStepSignal)
               }
           )

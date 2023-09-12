@@ -259,7 +259,7 @@ end MainSpec
  */
 private class UIModelTestImpl extends UIModel:
   /** Stores the current state of radio sources. */
-  private val radioSources: Var[Option[Try[RadioModel.RadioSources]]] = Var(None)
+  private val radioSources: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
   /** Stores the state of the current radio source. */
   private val currentSource: Var[Option[Try[RadioService.CurrentSourceState]]] = Var(None)
@@ -286,7 +286,7 @@ private class UIModelTestImpl extends UIModel:
    * @param triedSources the ''Try'' with the radio sources
    */
   def setTriedRadioSources(triedSources: Try[RadioModel.RadioSources]): Unit =
-    radioSources set Some(triedSources)
+    radioSources set Some(triedSources.map(_.sources))
 
   /**
    * Sets the radio sources of this model to the given object.
@@ -304,7 +304,7 @@ private class UIModelTestImpl extends UIModel:
   def setTriedCurrentSource(triedSource: Try[RadioService.CurrentSourceState]): Unit =
     currentSource set Some(triedSource)
 
-  override def radioSourcesSignal: Signal[Option[Try[RadioModel.RadioSources]]] = radioSources.signal
+  override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
 
   override def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] = currentSource.signal
 
