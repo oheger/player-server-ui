@@ -160,6 +160,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
+  it should "allow switching to another radio source" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) {
+      $(element.ref).find("tr").eq(1).trigger("click")
+
+      model.newRadioSource should be("s1")
+    }
+  }
+
   "currentSourceElement" should "display the current radio source" in {
     val model = new UIModelTestImpl
     model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
@@ -264,6 +276,9 @@ private class UIModelTestImpl extends UIModel:
   /** A counter for the invocations of stopRadioPlayback(). */
   var stopRadioPlaybackCount = 0
 
+  /** Stores the updated radio source. */
+  var newRadioSource = ""
+
   /**
    * Sets the value for the current radio sources. Here a ''Try'' can be
    * provided.
@@ -305,4 +320,5 @@ private class UIModelTestImpl extends UIModel:
   override def stopRadioPlayback(): Unit =
     stopRadioPlaybackCount += 1
 
-  override def changeRadioSource(sourceID: String): Unit = ???
+  override def changeRadioSource(sourceID: String): Unit =
+    newRadioSource = sourceID
