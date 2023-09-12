@@ -70,8 +70,8 @@ object Main:
             children <-- sourcesSignal.map {
                 _.sources
               }
-              .split(_.id) { (_, _, sourceSignal) =>
-                renderRadioSource(sourceSignal, rankingStepSignal)
+              .split(_.id) { (id, _, sourceSignal) =>
+                renderRadioSource(model, id, sourceSignal, rankingStepSignal)
               }
           )
         )
@@ -135,12 +135,16 @@ object Main:
   /**
    * Generates an element for the specified radio source.
    *
+   * @param model             the UI model
+   * @param sourceID          the ID of the current radio source
    * @param sourceSignal      the signal for the radio source to be rendered
    * @param rankingStepSignal the signal for the mapping of the ranking to
    *                          style classes
    * @return the element representing this radio source
    */
-  private def renderRadioSource(sourceSignal: Signal[RadioModel.RadioSource],
+  private def renderRadioSource(model: UIModel,
+                                sourceID: String,
+                                sourceSignal: Signal[RadioModel.RadioSource],
                                 rankingStepSignal: Signal[Double]): Element =
     val rankingSignal = sourceSignal.map(_.ranking)
     val styleClassIdxSignal = for
@@ -152,6 +156,7 @@ object Main:
     val rankingTextSignal = rankingSignal.map(ranking => s"\u2606:$ranking")
 
     tr(className <-- itemClassSignal,
+      onClick --> { _ => model.changeRadioSource(sourceID) },
       td(
         textAlign := "right",
         verticalAlign := "top",
