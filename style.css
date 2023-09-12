@@ -55,10 +55,11 @@ button:focus-visible {
 }
 
 #currentSource {
+  width: 100%;
   border: 1px solid;
+  border-radius: 25px;
   font-size: 1.5em;
   padding: 10px 0;
-  margin-right: 5px;
 }
 
 .btnIcon {
@@ -71,7 +72,7 @@ button:focus-visible {
 
 #radioSources {
   width: 100%;
-  padding: 2em;
+  padding-top: 2em;
 }
 
 #radioSourcesTable {
@@ -112,7 +113,7 @@ button:focus-visible {
 }
 
 .radioSourceItem0 {
-  background-color: #29260c;
+  background-color: #82821e;
 }
 
 .radioSourceRanking {
