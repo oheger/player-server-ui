@@ -16,11 +16,33 @@
 
 package com.github.oheger.playerserverui
 
+import com.github.oheger.playerserverui.UIModel.mapOptionalErrorSignal
 import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
+
+object UIModel:
+  /**
+   * Helper function to apply a mapping on a signal that contains an optional
+   * value and can indicate a failure. This function handles mapping of the
+   * ''Optional'' and the ''Try''; the provided mapping function is only
+   * applied on normal values.
+   *
+   * @param signal the signal to map
+   * @param f      the mapping function on normal signal values
+   * @tparam A the data type of the signal
+   * @tparam B the result type of the mapping function
+   * @return the resulting mapped signal
+   */
+  private def mapOptionalErrorSignal[A, B](signal: Signal[Option[Try[A]]])(f: A => B): Signal[Option[Try[B]]] =
+    signal.map { opt =>
+      opt.map { triedValue =>
+        triedValue map f
+      }
+    }
+end UIModel
 
 /**
  * A trait defining functionality to update and query the state of the player
@@ -37,21 +59,32 @@ trait UIModel:
   def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]]
 
   /**
-   * Returns a signal for the current list of radio sources that is sorted by
-   * the criteria selected by the user. Currently, the list of radio sources is
-   * ordered by ranking; later, other sort criteria may be supported.
+   * Returns a signal with a list of radio sources that can be selected by the
+   * user. This is the list of available radio sources without the current
+   * radio source.
+   *
+   * @return the signal with the radio sources that can be selected
+   */
+  def selectableRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
+    optCurrentSourceIDSignal flatMap { optCurrentID =>
+      mapOptionalErrorSignal(radioSourcesSignal) { sources =>
+        sources filterNot { source => optCurrentID contains source.id }
+      }
+    }
+
+  /**
+   * Returns a signal for the current list of selectable radio sources (i.e.
+   * excluding the current radio source) that is sorted by the criteria
+   * selected by the user. Currently, the list of radio sources is ordered by
+   * ranking; later, other sort criteria may be supported.
    *
    * @return the signal with the sorted list of radio sources
    */
   def sortedRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
-    radioSourcesSignal.map { optSources =>
-      optSources map { triedSources =>
-        triedSources map { sources =>
-          sources.sortWith { (src1, src2) =>
-            (src1.ranking > src2.ranking) ||
-              (src1.ranking == src2.ranking && src1.name.compareToIgnoreCase(src2.name) < 0)
-          }
-        }
+    mapOptionalErrorSignal(selectableRadioSourcesSignal) { sources =>
+      sources.sortWith { (src1, src2) =>
+        (src1.ranking > src2.ranking) ||
+          (src1.ranking == src2.ranking && src1.name.compareToIgnoreCase(src2.name) < 0)
       }
     }
 
@@ -94,4 +127,17 @@ trait UIModel:
    */
   def changeRadioSource(sourceID: String): Unit
 
-  
+  /**
+   * Returns a signal with the name of the currently selected radio source if
+   * it is defined.
+   *
+   * @return a signal with the name of the current radio source
+   */
+  private def optCurrentSourceIDSignal: Signal[Option[String]] =
+    currentSourceStateSignal.map { optSource =>
+      optSource.flatMap { triedSource =>
+        triedSource match
+          case Failure(exception) => None
+          case Success(value) => value.optCurrentSource.map(_.id)
+      }
+    }

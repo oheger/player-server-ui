@@ -100,6 +100,31 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
+  it should "ignore a failure in the current radio source" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    model setTriedCurrentSource Failure(new IllegalStateException("Test exception"))
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) {
+      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
+    }
+  }
+
+  it should "filter out the current radio source" in {
+    val currentSource = RadioService.CurrentSourceState(Some(DummyUIModel.DummyRadioSources.sources.head),
+      playbackEnabled = true)
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    model setTriedCurrentSource Success(currentSource)
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) {
+      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
+      $(element.ref).find(s"tr:contains('${currentSource.optCurrentSource.get.name}')").length should be(0)
+    }
+  }
+
   it should "use different styles based on the ranking of radio sources" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
