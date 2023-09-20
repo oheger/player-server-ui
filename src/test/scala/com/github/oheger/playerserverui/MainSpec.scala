@@ -276,6 +276,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find("img.btnIconDisabled[src='/playback-start.svg']").length should be(1)
     }
   }
+
+  it should "provide a button to shut down the player server" in {
+    val model = new UIModelTestImpl
+    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    val element = Main.currentSourceElement(model)
+
+    testDom(element) {
+      $(element.ref).find("#btnShutdown").trigger("click")
+
+      model.shutdownCount should be(1)
+    }
+  }
 end MainSpec
 
 /**
@@ -300,6 +312,9 @@ private class UIModelTestImpl extends UIModel:
 
   /** A counter for the invocations of stopRadioPlayback(). */
   var stopRadioPlaybackCount = 0
+
+  /** A counter for the invocations of shutdown(). */
+  var shutdownCount = 0
 
   /** Stores the updated radio source. */
   var newRadioSource = ""
@@ -348,4 +363,5 @@ private class UIModelTestImpl extends UIModel:
   override def changeRadioSource(sourceID: String): Unit =
     newRadioSource = sourceID
 
-  override def shutdown(): Unit = ???
+  override def shutdown(): Unit =
+    shutdownCount += 1

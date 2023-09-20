@@ -68,8 +68,8 @@ object Main:
         table(idAttr := "radioSourcesTable",
           tbody(
             children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>
-                renderRadioSource(model, id, sourceSignal, rankingStepSignal)
-              }
+              renderRadioSource(model, id, sourceSignal, rankingStepSignal)
+            }
           )
         )
       )
@@ -117,11 +117,23 @@ object Main:
               )
             )
 
+          val btnShutdown =
+            button(
+              idAttr := "btnShutdown",
+              onClick --> { _ => model.shutdown() },
+              img(
+                src := "/shutdown.svg",
+                className := "btnIcon",
+                alt := "Shutdown"
+              )
+            )
+
           val divCurrentSource = div(
             idAttr := "currentSource",
             p(source.name),
             btnStartPlayback,
-            btnStopPlayback
+            btnStopPlayback,
+            btnShutdown
           )
 
           List(divCurrentSource)
