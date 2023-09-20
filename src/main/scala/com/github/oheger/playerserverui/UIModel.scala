@@ -128,6 +128,12 @@ trait UIModel:
   def changeRadioSource(sourceID: String): Unit
 
   /**
+   * Shuts down the player server. Also updates the current state to indicate
+   * that the server is no longer available.
+   */
+  def shutdown(): Unit
+
+  /**
    * Returns a signal with the name of the currently selected radio source if
    * it is defined.
    *

@@ -73,6 +73,10 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
       case Failure(exception) => currentSourceVar set Some(Failure(exception))
     }
 
+  override def shutdown(): Unit =
+    currentSourceVar set Some(Failure(new IllegalStateException("Server is no longer available.")))
+    radioService.shutdown()
+
   /**
    * Changes the playback state to the given value. This function is called
    * when the user has started or stopped playback.
