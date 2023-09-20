@@ -254,3 +254,33 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
     assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
   }
+
+  "shutdown" should "shutdown the player server" in {
+    var shutdownCalls = 0
+    val service = new RadioService(ServiceUrl) {
+      override def shutdown(): Unit =
+        shutdownCalls += 1
+    }
+
+    val model = new DefaultUIModel(service)
+    model.shutdown()
+
+    shutdownCalls should be(1)
+  }
+
+  it should "update the state of the current source" in {
+    val service = new RadioService(ServiceUrl) {
+      override def shutdown(): Unit = {}
+    }
+
+    val model = new DefaultUIModel(service)
+    model.shutdown()
+
+    Future {
+      model.currentSourceStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
+        .now() match
+        case Some(Failure(exception)) =>
+          exception shouldBe a[IllegalStateException]
+        case v => fail("Unexpected value: " + v)
+    }
+  }

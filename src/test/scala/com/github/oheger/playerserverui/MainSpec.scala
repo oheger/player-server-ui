@@ -347,3 +347,5 @@ private class UIModelTestImpl extends UIModel:
 
   override def changeRadioSource(sourceID: String): Unit =
     newRadioSource = sourceID
+
+  override def shutdown(): Unit = ???
