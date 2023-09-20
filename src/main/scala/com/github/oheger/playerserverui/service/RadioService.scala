@@ -145,6 +145,13 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
   }
 
   /**
+   * Calls the server API to shutdown the server.
+   */
+  def shutdown(): Unit =
+    basicRequest.post(uri"$baseUrl/api/shutdown")
+      .send(backend)
+
+  /**
    * Generates a URI for calling the radio server API.
    *
    * @param subPath the sub path to be invoked

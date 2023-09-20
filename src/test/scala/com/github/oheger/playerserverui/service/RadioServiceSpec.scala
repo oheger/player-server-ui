@@ -17,6 +17,7 @@
 package com.github.oheger.playerserverui.service
 
 import com.github.oheger.playerserverui.model.RadioModel
+import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
 import sttp.client3.{FetchBackend, HttpError, Request, Response, SttpClientException}
@@ -24,7 +25,7 @@ import sttp.model.{Method, StatusCode}
 
 import java.io.IOException
 import scala.concurrent.duration.*
-import scala.concurrent.{Await, Awaitable, ExecutionContext}
+import scala.concurrent.{Await, Awaitable, ExecutionContext, Future, Promise}
 
 object RadioServiceSpec:
   /** The timeout when waiting for futures to complete. */
@@ -42,20 +43,25 @@ object RadioServiceSpec:
   /** The base URL for the player service. */
   private val BaseUrl = s"$Scheme://$ServerHost:$ServerPort"
 
+  /** The path prefix for invoking the radio API. */
+  private val RadioApiPrefix = List("api", "radio")
+
   /**
    * Helper function to check the URI of a request. This function tests whether
    * the URL points to the correct server and the API endpoint. A test function
    * can then test the additional path segments.
    *
    * @param request the request whose URI is to be checked
+   * @param prefix  the path prefix for the request
    * @param f       the test function for the path segments (without the leading
    *                "api" path)
    * @return a flag whether the test is successful
    */
-  private def checkUri(request: Request[?, ?])(f: Seq[String] => Boolean): Boolean =
+  private def checkUri(request: Request[?, ?], prefix: List[String] = RadioApiPrefix)
+                      (f: Seq[String] => Boolean): Boolean =
     val uri = request.uri
     uri.scheme.contains(Scheme) && uri.host.contains(ServerHost) && uri.port.contains(ServerPort) &&
-      uri.path.startsWith(List("api", "radio")) && f(uri.path.drop(2))
+      uri.path.startsWith(prefix) && f(uri.path.drop(prefix.size))
 
   /**
    * Waits for the given object to complete and returns its value or throws an
@@ -358,4 +364,20 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
     }
 
     futEx map { ex => ex.getCause should be(exception) }
+  }
+
+  it should "support shutting down the server" in {
+    val promiseInvocation = Promise[Assertion]()
+
+    val testBackend = FetchBackend.stub
+      .whenRequestMatches { request =>
+        checkUri(request, List("api"))(_.toList == List("shutdown")) && request.method == Method.POST
+      }.thenRespond {
+        promiseInvocation.success(true shouldBe true)
+        throw new IOException("Server shutting down.")
+      }
+    val service = new RadioService(testBackend, BaseUrl)
+    service.shutdown()
+
+    promiseInvocation.future
   }
