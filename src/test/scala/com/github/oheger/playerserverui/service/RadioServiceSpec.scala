@@ -25,12 +25,9 @@ import sttp.model.{Method, StatusCode}
 
 import java.io.IOException
 import scala.concurrent.duration.*
-import scala.concurrent.{Await, Awaitable, ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 object RadioServiceSpec:
-  /** The timeout when waiting for futures to complete. */
-  private val AwaitTimeout = 3.seconds
-
   /** The scheme of the server URI. */
   private val Scheme = "http"
 
@@ -62,16 +59,6 @@ object RadioServiceSpec:
     val uri = request.uri
     uri.scheme.contains(Scheme) && uri.host.contains(ServerHost) && uri.port.contains(ServerPort) &&
       uri.path.startsWith(prefix) && f(uri.path.drop(prefix.size))
-
-  /**
-   * Waits for the given object to complete and returns its value or throws an
-   * exception in case of a timeout.
-   *
-   * @param w the object to wait for
-   * @tparam T the type of the result
-   * @return the result
-   */
-  private def await[T](w: Awaitable[T]): T = Await.result(w, AwaitTimeout)
 end RadioServiceSpec
 
 /**
