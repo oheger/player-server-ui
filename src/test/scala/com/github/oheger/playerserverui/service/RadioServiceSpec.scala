@@ -17,15 +17,22 @@
 package com.github.oheger.playerserverui.service
 
 import com.github.oheger.playerserverui.model.RadioModel
+import com.raquo.airstream.core.{EventStream, Observer}
+import com.raquo.airstream.ownership.ManualOwner
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
-import sttp.client3.{FetchBackend, HttpError, Request, Response, SttpClientException}
+import sttp.capabilities.WebSockets
+import sttp.client3.testing.SttpBackendStub
+import sttp.client3.{HttpError, Request, Response, SttpClientException}
 import sttp.model.{Method, StatusCode}
+import sttp.ws.WebSocketFrame
+import sttp.ws.testing.WebSocketStub
 
 import java.io.IOException
-import scala.concurrent.duration.*
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.duration.*
 
 object RadioServiceSpec:
   /** The scheme of the server URI. */
@@ -43,6 +50,17 @@ object RadioServiceSpec:
   /** The path prefix for invoking the radio API. */
   private val RadioApiPrefix = List("api", "radio")
 
+  /** The default timeout when waiting for a test to succeed. */
+  private val DefaultTimeout = 3.seconds
+
+  /**
+   * Creates the backend to be used for tests.
+   *
+   * @return the test backend
+   */
+  private def createTestBackend(): SttpBackendStub[Future, WebSockets] =
+    SttpBackendStub.asynchronousFuture
+
   /**
    * Helper function to check the URI of a request. This function tests whether
    * the URL points to the correct server and the API endpoint. A test function
@@ -50,21 +68,43 @@ object RadioServiceSpec:
    *
    * @param request the request whose URI is to be checked
    * @param prefix  the path prefix for the request
+   * @param scheme  the expected URI scheme
    * @param f       the test function for the path segments (without the leading
    *                "api" path)
    * @return a flag whether the test is successful
    */
-  private def checkUri(request: Request[?, ?], prefix: List[String] = RadioApiPrefix)
+  private def checkUri(request: Request[?, ?],
+                       prefix: List[String] = RadioApiPrefix,
+                       scheme: String = Scheme)
                       (f: Seq[String] => Boolean): Boolean =
     val uri = request.uri
-    uri.scheme.contains(Scheme) && uri.host.contains(ServerHost) && uri.port.contains(ServerPort) &&
+    uri.scheme.contains(scheme) && uri.host.contains(ServerHost) && uri.port.contains(ServerPort) &&
       uri.path.startsWith(prefix) && f(uri.path.drop(prefix.size))
+
+  /**
+   * Returns a [[Promise]] that can be used for an asynchronous test. The
+   * promise is configured to fail after a given timeout.
+   *
+   * @param timeout the timeout for the promise
+   * @param owner   the owner for observer registrations
+   * @tparam T the result type of the promise
+   * @return the promise with a timeout
+   */
+  private def promiseWithTimeout[T](timeout: Duration = DefaultTimeout)(implicit owner: ManualOwner): Promise[T] =
+    val promise = Promise[T]()
+    val timeoutStream = EventStream.delay(DefaultTimeout.toMillis.toInt, (), emitOnce = true)
+    val observer = Observer[Unit] { _ =>
+      promise.tryFailure(new IllegalStateException("Promise did not complete within timeout."))
+    }
+    timeoutStream.addObserver(observer)
+    promise
+
 end RadioServiceSpec
 
 /**
  * Test class for [[RadioService]].
  */
-class RadioServiceSpec extends AsyncFlatSpec with Matchers:
+class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matchers:
 
   import RadioServiceSpec.*
 
@@ -74,6 +114,13 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
    */
   implicit override def executionContext: ExecutionContext =
     scala.scalajs.concurrent.JSExecutionContext.Implicits.queue
+
+  /** An owner for airstream subscriptions. */
+  implicit val owner: ManualOwner = new ManualOwner
+
+  override protected def afterAll(): Unit =
+    owner.killSubscriptions()
+    super.afterAll()
 
   "RadioService" should "return the available radio sources" in {
     val sourcesJson =
@@ -98,7 +145,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
       RadioModel.RadioSource("id2", "anotherSource", 0),
     )
 
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("sources")) && request.method == Method.GET
       }.thenRespond(sourcesJson)
@@ -110,7 +157,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "handle a failure status when querying radio sources" in {
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { _ => true }
       .thenRespond(Response("", StatusCode.BadRequest))
 
@@ -124,7 +171,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
   it should "handle a failed future when querying radio sources" in {
     val exception = new IOException("test exception")
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { _ => true }
       .thenRespond(throw exception)
 
@@ -154,7 +201,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
     val expCurrentSource = RadioModel.RadioSource("id1", "currentSource", 10)
     val expCurrentState = RadioService.CurrentSourceState(Some(expCurrentSource), playbackEnabled = false)
 
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
       }.thenRespond(currentSource)
@@ -177,7 +224,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
         |""".stripMargin
     val expCurrentState = RadioService.CurrentSourceState(None, playbackEnabled = true)
 
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
       }.thenRespond("", StatusCode.NoContent)
@@ -198,7 +245,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
         |  "enabled": true
         |}
         |""".stripMargin
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
       }.thenRespond(playbackState)
@@ -221,7 +268,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
         |}
         |""".stripMargin
     val exception = new IOException("test exception")
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
       }.thenRespond(playbackState)
@@ -244,7 +291,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
         |}
         |""".stripMargin
 
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
       }.thenRespond("Invalid JSON")
@@ -261,7 +308,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "start radio playback" in {
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback", "start")) && request.method == Method.POST
       }.thenRespond("", StatusCode.Ok)
@@ -272,7 +319,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "handle an unexpected status code when starting radio playback" in {
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback", "start")) && request.method == Method.POST
       }.thenRespond("", StatusCode.InternalServerError)
@@ -286,7 +333,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "stop radio playback" in {
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback", "stop")) && request.method == Method.POST
       }.thenRespond("", StatusCode.Ok)
@@ -298,7 +345,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
   it should "handle an exception when stopping radio playback" in {
     val exception = new IOException("Test exception when stopping playback.")
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback", "stop")) && request.method == Method.POST
       }.thenRespond(throw exception)
@@ -313,7 +360,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
   it should "switch to another radio source" in {
     val RadioSourceID = "nextCurrentRadioSource"
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("sources", "current", RadioSourceID)) &&
           request.method == Method.POST
@@ -325,7 +372,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "handle an unexpected status code when switching to another source" in {
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(_.toList.take(2) == List("sources", "current")) && request.method == Method.POST
       }.thenRespond("", StatusCode.NotFound)
@@ -340,7 +387,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
 
   it should "handle an exception when switching to another source" in {
     val exception = new IOException("Test exception when switching to a radio source.")
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request)(_.toList.take(2) == List("sources", "current")) && request.method == Method.POST
       }.thenRespond(throw exception)
@@ -356,7 +403,7 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
   it should "support shutting down the server" in {
     val promiseInvocation = Promise[Assertion]()
 
-    val testBackend = FetchBackend.stub
+    val testBackend = createTestBackend()
       .whenRequestMatches { request =>
         checkUri(request, List("api"))(_.toList == List("shutdown")) && request.method == Method.POST
       }.thenRespond {
@@ -367,4 +414,42 @@ class RadioServiceSpec extends AsyncFlatSpec with Matchers:
     service.shutdown()
 
     promiseInvocation.future
+  }
+
+  it should "support registering an event listener" in {
+    val webSocketStub = WebSocketStub.initialReceive(
+      List(WebSocketFrame.text("foo"), WebSocketFrame.text("bar"))
+    )
+    val testBackend = createTestBackend()
+      .whenRequestMatches { request =>
+        checkUri(request, scheme = "ws")(_.toList == List("events"))
+      }.thenRespond(webSocketStub)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val promiseMessages = promiseWithTimeout[List[String]]()
+    var messages = List.empty[String]
+    val listener: String => Unit = { msg =>
+      messages = msg :: messages
+      if messages.size >= 2 then promiseMessages.success(messages)
+    }
+
+    service.registerEventListener(listener)
+
+    promiseMessages.future map { messages =>
+      messages should contain theSameElementsAs List("foo", "bar")
+    }
+  }
+
+  it should "handle an exception when registering an event listener" in {
+    val exception = new IOException("Test exception when registering an event listener.")
+    val testBackend = createTestBackend()
+      .whenAnyRequest
+      .thenRespond("", StatusCode.Forbidden)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val futEx = recoverToExceptionIf[HttpError[_]] {
+      service.registerEventListener(println)
+    }
+
+    futEx map { ex => ex.getMessage should include(StatusCode.Forbidden.code.toString) }
   }

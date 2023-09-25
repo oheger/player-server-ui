@@ -18,13 +18,15 @@ package com.github.oheger.playerserverui.service
 
 import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService.{CurrentSourceState, mapException}
+import sttp.capabilities.WebSockets
 import sttp.client3.*
 import sttp.client3.ziojson.*
 import sttp.model.{StatusCode, Uri}
+import sttp.ws.WebSocket
 import zio.json.*
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 object RadioService:
   /**
@@ -67,7 +69,7 @@ end RadioService
  * @param backend the backend for sending HTTP requests
  * @param baseUrl the base URL of the player server
  */
-class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
+class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
   def this(baseUrl: String) = this(FetchBackend(), baseUrl)
 
   /**
@@ -152,6 +154,22 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
       .send(backend)
 
   /**
+   * Calls the server API to register an event listener for radio events. This
+   * function expects a listener function that is invoked for each web socket
+   * text message that was received.
+   *
+   * @param listener the listener function
+   * @return a ''Future'' with the outcome of this operation
+   */
+  def registerEventListener(listener: String => Unit): Future[Unit] = mapException {
+    val uri = s"ws${baseUrl.dropWhile(_ != ':')}/api/radio/events"
+    basicRequest.get(uri"$uri")
+      .response(asWebSocket(handleWebSocket(listener)).getRight)
+      .send(backend)
+      .map(_ => ())
+  }
+
+  /**
    * Generates a URI for calling the radio server API.
    *
    * @param subPath the sub path to be invoked
@@ -160,3 +178,24 @@ class RadioService(backend: SttpBackend[Future, Any], baseUrl: String):
   private def serverUri(subPath: String): Uri =
     val uriStr = s"$baseUrl/api/radio$subPath"
     uri"$uriStr"
+
+  /**
+   * A function for handling web socket messages for a specific listener. This
+   * function is passed to the web socket API of the ''STTP'' client. The
+   * resulting ''Future'' indicates when the web socket connection can be
+   * stopped. Since the connection should be active for the whole live-time of
+   * this app, it never completes.
+   *
+   * @param listener the listener function to be invoked
+   * @param ws       the [[WebSocket]] instance representing the connection
+   * @return a ''Future'' to terminate the connection
+   */
+  private def handleWebSocket(listener: String => Unit)(ws: WebSocket[Future]): Future[Unit] =
+    def processMessage(): Unit =
+      ws.receiveText().foreach { s =>
+        listener(s)
+        processMessage()
+      }
+
+    processMessage()
+    Promise[Unit]().future
