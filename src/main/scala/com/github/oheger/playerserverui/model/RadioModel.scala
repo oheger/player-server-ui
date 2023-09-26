@@ -18,6 +18,8 @@ package com.github.oheger.playerserverui.model
 
 import zio.json.{DeriveJsonDecoder, JsonDecoder}
 
+import scala.util.Try
+
 /**
  * A module defining classes to represent the data model of the player server
  * related to radio playback. Based on these classes, requests against the
@@ -51,7 +53,37 @@ object RadioModel:
    */
   final case class RadioSources(sources: List[RadioSource])
 
+  /**
+   * A data class defining messages sent from the server via a web socket
+   * connection to represent radio events.
+   *
+   * Via this mechanism, the client can react on certain changes of the radio
+   * playback state.
+   *
+   * @param messageType the type of the message as a string constant
+   * @param payload     the payload of this message
+   */
+  final case class RadioMessage(messageType: String,
+                                payload: String):
+    /**
+     * Returns an ''Option'' with the [[RadioMessageType]] that corresponds to
+     * this message. If the message has a supported type, the resulting
+     * ''Option'' is defined and can be evaluated; otherwise, it is ''None''.
+     *
+     * @return an ''Option'' with the [[RadioMessageType]] of this message
+     */
+    def radioMessageTypeOption: Option[RadioMessageType] =
+      Try {
+        RadioMessageType.valueOf(messageType)
+      }.toOption
+
+  /**
+   * An enumeration class that defines the different types of radio messages.
+   */
+  enum RadioMessageType:
+    case SourceChanged, ReplacementStart, ReplacementEnd, TitleInfo
+
   implicit val playbackStatusDecoder: JsonDecoder[PlaybackStatus] = DeriveJsonDecoder.gen[PlaybackStatus]
   implicit val radioSourceDecoder: JsonDecoder[RadioSource] = DeriveJsonDecoder.gen[RadioSource]
   implicit val radioSourcesDecoder: JsonDecoder[RadioSources] = DeriveJsonDecoder.gen[RadioSources]
-
+  implicit val radioMessageDecoder: JsonDecoder[RadioMessage] = DeriveJsonDecoder.gen[RadioMessage]
