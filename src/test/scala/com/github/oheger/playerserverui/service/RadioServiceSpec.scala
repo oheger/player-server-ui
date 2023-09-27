@@ -17,6 +17,7 @@
 package com.github.oheger.playerserverui.service
 
 import com.github.oheger.playerserverui.model.RadioModel
+import com.github.oheger.playerserverui.model.RadioModel.RadioMessage
 import com.raquo.airstream.core.{EventStream, Observer}
 import com.raquo.airstream.ownership.ManualOwner
 import org.scalatest.BeforeAndAfterAll
@@ -29,6 +30,7 @@ import sttp.client3.{HttpError, Request, Response, SttpClientException}
 import sttp.model.{Method, StatusCode}
 import sttp.ws.WebSocketFrame
 import sttp.ws.testing.WebSocketStub
+import zio.json.*
 
 import java.io.IOException
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -52,6 +54,10 @@ object RadioServiceSpec:
 
   /** The default timeout when waiting for a test to succeed. */
   private val DefaultTimeout = 3.seconds
+
+  /** An encoder to convert radio messages to JSON. */
+  private implicit val radioMessageEncoder: JsonEncoder[RadioModel.RadioMessage] =
+    DeriveJsonEncoder.gen[RadioModel.RadioMessage]
 
   /**
    * Creates the backend to be used for tests.
@@ -417,8 +423,12 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
   }
 
   it should "support registering an event listener" in {
+    val radioMessages = List(
+      RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, "someSource"),
+      RadioModel.RadioMessage(RadioModel.RadioMessageType.TitleInfo.toString, "some title")
+    )
     val webSocketStub = WebSocketStub.initialReceive(
-      List(WebSocketFrame.text("foo"), WebSocketFrame.text("bar"))
+      radioMessages.map(msg => WebSocketFrame.text(msg.toJson))
     )
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>
@@ -426,9 +436,9 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
       }.thenRespond(webSocketStub)
 
     val service = new RadioService(testBackend, BaseUrl)
-    val promiseMessages = promiseWithTimeout[List[String]]()
-    var messages = List.empty[String]
-    val listener: String => Unit = { msg =>
+    val promiseMessages = promiseWithTimeout[List[RadioModel.RadioMessage]]()
+    var messages = List.empty[RadioModel.RadioMessage]
+    val listener: RadioModel.RadioMessage => Unit = { msg =>
       messages = msg :: messages
       if messages.size >= 2 then promiseMessages.success(messages)
     }
@@ -436,7 +446,7 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
     service.registerEventListener(listener)
 
     promiseMessages.future map { messages =>
-      messages should contain theSameElementsAs List("foo", "bar")
+      messages should contain theSameElementsAs radioMessages
     }
   }
 
@@ -452,4 +462,26 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
     }
 
     futEx map { ex => ex.getMessage should include(StatusCode.Forbidden.code.toString) }
+  }
+
+  it should "ignore web socket messages that cannot be deserialized to radio messages" in {
+    val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementEnd.toString, "currentSource")
+    val webSocketStub = WebSocketStub.initialReceive(
+      List("This is an unexpected message", radioMessage.toJson).map(WebSocketFrame.text)
+    )
+    val testBackend = createTestBackend()
+      .whenAnyRequest
+      .thenRespond(webSocketStub)
+
+    val service = new RadioService(testBackend, BaseUrl)
+    val promiseMessage = promiseWithTimeout[RadioModel.RadioMessage]()
+    val listener: RadioModel.RadioMessage => Unit = { msg =>
+      promiseMessage.success(msg)
+    }
+
+    service.registerEventListener(listener)
+
+    promiseMessage.future map { message =>
+      message should be(radioMessage)
+    }
   }
