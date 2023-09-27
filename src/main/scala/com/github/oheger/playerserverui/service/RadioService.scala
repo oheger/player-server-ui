@@ -156,12 +156,14 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
   /**
    * Calls the server API to register an event listener for radio events. This
    * function expects a listener function that is invoked for each web socket
-   * text message that was received.
+   * text message that was received. The content of the text message is
+   * deserialized into a [[RadioModel.RadioMessage]] structure. Messages, for
+   * which this is not possible, are ignored.
    *
    * @param listener the listener function
    * @return a ''Future'' with the outcome of this operation
    */
-  def registerEventListener(listener: String => Unit): Future[Unit] = mapException {
+  def registerEventListener(listener: RadioModel.RadioMessage => Unit): Future[Unit] = mapException {
     val uri = s"ws${baseUrl.dropWhile(_ != ':')}/api/radio/events"
     basicRequest.get(uri"$uri")
       .response(asWebSocket(handleWebSocket(listener)).getRight)
@@ -190,10 +192,15 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
    * @param ws       the [[WebSocket]] instance representing the connection
    * @return a ''Future'' to terminate the connection
    */
-  private def handleWebSocket(listener: String => Unit)(ws: WebSocket[Future]): Future[Unit] =
+  private def handleWebSocket(listener: RadioModel.RadioMessage => Unit)(ws: WebSocket[Future]): Future[Unit] =
     def processMessage(): Unit =
       ws.receiveText().foreach { s =>
-        listener(s)
+        s.fromJson[RadioModel.RadioMessage] match
+          case Right(radioMessage) =>
+            listener(radioMessage)
+          case Left(err) =>
+            println(s"Received an unexpected web socket message: '$s'. Error: '$err'.")
+
         processMessage()
       }
 
