@@ -92,7 +92,7 @@ object Main:
           val baseClass = "btnIcon"
           if currentSourceState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
 
-        currentSourceState.optCurrentSource.fold(List.empty) { source =>
+        currentSourceState.currentSource.fold(List.empty) { source =>
           val btnStartPlayback =
             button(
               idAttr := "btnStartRadioPlayback",

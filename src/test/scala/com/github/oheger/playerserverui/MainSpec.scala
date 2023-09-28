@@ -112,8 +112,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
   }
 
   it should "filter out the current radio source" in {
-    val currentSource = RadioService.CurrentSourceState(Some(DummyUIModel.DummyRadioSources.sources.head),
-      playbackEnabled = true)
+    val selectedSource = DummyUIModel.DummyRadioSources.sources.head
+    val currentSource = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(selectedSource))
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
     model setTriedCurrentSource Success(currentSource)
@@ -121,7 +121,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
     testDom(element) {
       $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
-      $(element.ref).find(s"tr:contains('${currentSource.optCurrentSource.get.name}')").length should be(0)
+      $(element.ref).find(s"tr:contains('${selectedSource.name}')").length should be(0)
     }
   }
 
@@ -199,11 +199,12 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   "currentSourceElement" should "display the current radio source" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
-      val nodes = $(element.ref).find(s"p:contains('${DummyUIModel.CurrentSource.optCurrentSource.get.name}')")
+      val nodes = $(element.ref)
+        .find(s"p:contains('${DummyUIModel.TestRadioPlaybackState.currentSource.get.name}')")
       nodes.length should be(1)
       $(element.ref).find("img[src='/playback-stop.svg']").length should be(1)
       $(element.ref).find("img[src='/playback-start.svg']").length should be(1)
@@ -212,7 +213,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
   }
 
   it should "not display anything if no current source is selected" in {
-    val currentSource = RadioService.CurrentSourceState(None, playbackEnabled = true)
+    val currentSource = DummyUIModel.TestRadioPlaybackState.copy(currentSource = None)
     val model = new UIModelTestImpl
     model setTriedCurrentSource Success(currentSource)
     val element = Main.currentSourceElement(model)
@@ -247,7 +248,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "enable the button to start radio playback" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.CurrentSource.copy(playbackEnabled = false))
+    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false))
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
@@ -263,7 +264,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "enable the button to stop radio playback" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
@@ -279,7 +280,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "provide a button to shut down the player server" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.CurrentSource)
+    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.currentSourceElement(model)
 
     testDom(element) {
@@ -299,7 +300,7 @@ private class UIModelTestImpl extends UIModel:
   private val radioSources: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
   /** Stores the state of the current radio source. */
-  private val currentSource: Var[Option[Try[RadioService.CurrentSourceState]]] = Var(None)
+  private val currentSource: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
 
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
@@ -341,12 +342,12 @@ private class UIModelTestImpl extends UIModel:
    *
    * @param triedSource the ''Try'' with data about the current source
    */
-  def setTriedCurrentSource(triedSource: Try[RadioService.CurrentSourceState]): Unit =
+  def setTriedCurrentSource(triedSource: Try[UIModel.RadioPlaybackState]): Unit =
     currentSource set Some(triedSource)
 
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
 
-  override def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] = currentSource.signal
+  override def currentSourceStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = currentSource.signal
 
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
