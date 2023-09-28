@@ -25,6 +25,22 @@ import scala.util.{Failure, Success, Try}
 
 object UIModel:
   /**
+   * A data class representing the current radio playback state. The class
+   * contains all the information available for the radio player that could be
+   * of interest for the UI.
+   *
+   * @param currentSource     the currently selected radio source if any
+   * @param replacementSource the replacement source if any
+   * @param playbackEnabled   a flag whether playback is currently enabled
+   * @param titleInfo         a string with current tile information (empty if
+   *                          not available)
+   */
+  final case class RadioPlaybackState(currentSource: Option[RadioModel.RadioSource],
+                                      replacementSource: Option[RadioModel.RadioSource],
+                                      playbackEnabled: Boolean,
+                                      titleInfo: String)
+
+  /**
    * Helper function to apply a mapping on a signal that contains an optional
    * value and can indicate a failure. This function handles mapping of the
    * ''Optional'' and the ''Try''; the provided mapping function is only
