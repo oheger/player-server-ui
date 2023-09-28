@@ -33,12 +33,12 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   private val radioSourcesVar: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
   /** Stores the state of the current radio source. */
-  private val currentSourceVar: Var[Option[Try[RadioService.CurrentSourceState]]] = Var(None)
+  private val currentSourceVar: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
 
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
-  override val currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]] =
+  override val currentSourceStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
     currentSourceVar.signal
 
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -54,7 +54,13 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
 
   override def initCurrentSource(): Unit =
     radioService.loadCurrentSource() onComplete { triedCurrentSource =>
-      currentSourceVar.set(Some(triedCurrentSource))
+      val radioPlaybackState = triedCurrentSource map { source =>
+        UIModel.RadioPlaybackState(currentSource = source.optCurrentSource,
+          replacementSource = None,
+          playbackEnabled = source.playbackEnabled,
+          titleInfo = "")
+      }
+      currentSourceVar.set(Some(radioPlaybackState))
     }
 
   override def startRadioPlayback(): Unit =

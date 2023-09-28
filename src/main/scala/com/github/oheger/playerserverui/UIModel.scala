@@ -16,9 +16,8 @@
 
 package com.github.oheger.playerserverui
 
-import com.github.oheger.playerserverui.UIModel.mapOptionalErrorSignal
+import com.github.oheger.playerserverui.UIModel.{RadioPlaybackState, mapOptionalErrorSignal}
 import com.github.oheger.playerserverui.model.RadioModel
-import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 
 import scala.util.{Failure, Success, Try}
@@ -111,7 +110,7 @@ trait UIModel:
    *
    * @return the signal with the current source state
    */
-  def currentSourceStateSignal: Signal[Option[Try[RadioService.CurrentSourceState]]]
+  def currentSourceStateSignal: Signal[Option[Try[RadioPlaybackState]]]
 
   /**
    * Loads the current list of radio sources from the server. This function
@@ -160,6 +159,6 @@ trait UIModel:
       optSource.flatMap { triedSource =>
         triedSource match
           case Failure(exception) => None
-          case Success(value) => value.optCurrentSource.map(_.id)
+          case Success(value) => value.currentSource.map(_.id)
       }
     }

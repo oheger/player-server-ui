@@ -37,6 +37,7 @@ object DefaultUIModelSpec:
    * not actually invoked, this is a dummy URL.
    */
   private val ServiceUrl = "https://radio.example.org"
+end DefaultUIModelSpec
 
 /**
  * Test class for [[DefaultUIModel]].
@@ -123,16 +124,15 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   }
 
   "initCurrentSource" should "fetch the current radio source from the server" in {
-    val currentSourceState = DummyUIModel.CurrentSource
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(currentSourceState)
+        Future.successful(DummyUIModel.CurrentSource)
     }
 
     val model = new DefaultUIModel(service)
     model.initCurrentSource()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(currentSourceState)))
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "record an exception when loading the current radio source from the server" in {
@@ -169,7 +169,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     model.initCurrentSource()
     model.startRadioPlayback()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.CurrentSource)))
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "handle a failed update" in {
@@ -191,7 +191,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   }
 
   "stopRadioPlayback" should "update the playback state" in {
-    val expCurrentSource = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
+    val expCurrentSource = DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false)
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
         Future.successful(DummyUIModel.CurrentSource)
@@ -209,7 +209,6 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   it should "handle a failed update" in {
     val exception = new IllegalStateException("Test exception when stopping playback.")
-    val expCurrentSource = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
         Future.successful(DummyUIModel.CurrentSource)
@@ -239,7 +238,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.changeRadioSource(newSourceID)
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.CurrentSource)))
+    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "handle a failed change of the current radio source" in {
