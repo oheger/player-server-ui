@@ -110,7 +110,7 @@ trait UIModel:
    *
    * @return the signal with the current source state
    */
-  def currentSourceStateSignal: Signal[Option[Try[RadioPlaybackState]]]
+  def radioPlaybackStateSignal: Signal[Option[Try[RadioPlaybackState]]]
 
   /**
    * Loads the current list of radio sources from the server. This function
@@ -119,10 +119,10 @@ trait UIModel:
   def initRadioSources(): Unit
 
   /**
-   * Loads the state for the current radio source from the server. This causes
-   * the signal for this state to be updated.
+   * Loads the state for the radio playback from the server. This causes the
+   * signal for this state to be updated.
    */
-  def initCurrentSource(): Unit
+  def initRadioPlaybackState(): Unit
 
   /**
    * Sends a command to the server to start radio playback.
@@ -155,7 +155,7 @@ trait UIModel:
    * @return a signal with the name of the current radio source
    */
   private def optCurrentSourceIDSignal: Signal[Option[String]] =
-    currentSourceStateSignal.map { optSource =>
+    radioPlaybackStateSignal.map { optSource =>
       optSource.flatMap { triedSource =>
         triedSource match
           case Failure(exception) => None

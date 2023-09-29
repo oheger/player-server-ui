@@ -17,7 +17,6 @@
 package com.github.oheger.playerserverui
 
 import com.github.oheger.playerserverui.model.RadioModel
-import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 import com.raquo.laminar.api.L
@@ -65,7 +64,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
     Main.refreshUi(model)
 
-    model.initCurrentSourceCount should be(1)
+    model.initRadioPlaybackStateCount should be(1)
   }
 
   "radioSourcesElement" should "display all available radio sources" in {
@@ -103,7 +102,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
   it should "ignore a failure in the current radio source" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
-    model setTriedCurrentSource Failure(new IllegalStateException("Test exception"))
+    model setTriedRadioPlaybackState Failure(new IllegalStateException("Test exception"))
     val element = Main.radioSourcesElement(model)
 
     testDom(element) {
@@ -116,7 +115,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val currentSource = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(selectedSource))
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
-    model setTriedCurrentSource Success(currentSource)
+    model setTriedRadioPlaybackState Success(currentSource)
     val element = Main.radioSourcesElement(model)
 
     testDom(element) {
@@ -197,10 +196,10 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
-  "currentSourceElement" should "display the current radio source" in {
+  "radioPlaybackStateElement" should "display the current radio source" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       val nodes = $(element.ref)
@@ -215,8 +214,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
   it should "not display anything if no current source is selected" in {
     val currentSource = DummyUIModel.TestRadioPlaybackState.copy(currentSource = None)
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(currentSource)
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Success(currentSource)
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
@@ -227,8 +226,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
   it should "show an error message if the current source could not be loaded" in {
     val message = "Failure while loading the current source"
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Failure(new IllegalStateException(message))
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Failure(new IllegalStateException(message))
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       $(element.ref).find(s"p.error:contains('$message')").length should be(1)
@@ -239,7 +238,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
   }
 
   it should "show a progress indicator while loading data" in {
-    val element = Main.currentSourceElement(new UIModelTestImpl)
+    val element = Main.radioPlaybackStateElement(new UIModelTestImpl)
 
     testDom(element) {
       $(element.ref).find("img[src='/loading.gif']").length should be(1)
@@ -248,8 +247,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "enable the button to start radio playback" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false))
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false))
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       $(element.ref).find("#btnStartRadioPlayback:enabled").trigger("click")
@@ -264,8 +263,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "enable the button to stop radio playback" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       $(element.ref).find("#btnStopRadioPlayback:enabled").trigger("click")
@@ -280,8 +279,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
   it should "provide a button to shut down the player server" in {
     val model = new UIModelTestImpl
-    model setTriedCurrentSource Success(DummyUIModel.TestRadioPlaybackState)
-    val element = Main.currentSourceElement(model)
+    model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
+    val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
       $(element.ref).find("#btnShutdown").trigger("click")
@@ -299,14 +298,14 @@ private class UIModelTestImpl extends UIModel:
   /** Stores the current state of radio sources. */
   private val radioSources: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
-  /** Stores the state of the current radio source. */
-  private val currentSource: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
+  /** Stores the radio playback source. */
+  private val radioPlaybackState: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
 
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
 
-  /** A counter for the invocations of ''initCurrentSource()''. */
-  var initCurrentSourceCount = 0
+  /** A counter for the invocations of ''initRadioPlaybackState()''. */
+  var initRadioPlaybackStateCount = 0
 
   /** A counter for the invocations of ''startRadioPlayback()''. */
   var startRadioPlaybackCount = 0
@@ -338,22 +337,22 @@ private class UIModelTestImpl extends UIModel:
     setTriedRadioSources(Success(sources))
 
   /**
-   * Sets the data about the current radio source to the given object.
+   * Sets the data about the current radio playback state to the given object.
    *
-   * @param triedSource the ''Try'' with data about the current source
+   * @param triedState the ''Try'' with data about the radio playback source
    */
-  def setTriedCurrentSource(triedSource: Try[UIModel.RadioPlaybackState]): Unit =
-    currentSource set Some(triedSource)
+  def setTriedRadioPlaybackState(triedState: Try[UIModel.RadioPlaybackState]): Unit =
+    radioPlaybackState set Some(triedState)
 
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
 
-  override def currentSourceStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = currentSource.signal
+  override def radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = radioPlaybackState.signal
 
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
 
-  override def initCurrentSource(): Unit =
-    initCurrentSourceCount += 1
+  override def initRadioPlaybackState(): Unit =
+    initRadioPlaybackStateCount += 1
 
   override def startRadioPlayback(): Unit =
     startRadioPlaybackCount += 1
