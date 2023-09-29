@@ -39,7 +39,7 @@ object Main:
   def appElement(): Element =
     div(
       h1("PlayerServer UI"),
-      currentSourceElement(),
+      radioPlaybackStateElement(),
       radioSourcesElement()
     )
   end appElement
@@ -52,7 +52,7 @@ object Main:
    */
   private[playerserverui] def refreshUi(model: UIModel = uiModel): Unit =
     model.initRadioSources()
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
 
   /**
    * Returns an element that displays the currently available radio sources.
@@ -78,26 +78,26 @@ object Main:
 
   /**
    * Returns an element that displays information about the current radio
-   * source. The name of the current source - if any - is shown, also a button
-   * for pause or start playback.
+   * playback state. The information of the state is displayed, together with
+   * controls to update it.
    *
    * @param model the UI model
-   * @return the element to display the current radio source
+   * @return the element to display the current radio playback state
    */
-  private[playerserverui] def currentSourceElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.currentSourceStateSignal) { currentSourceStateSignal =>
-      currentSourceStateSignal.map { currentSourceState =>
+  private[playerserverui] def radioPlaybackStateElement(model: UIModel = uiModel): Element =
+    elementWithErrorAndLoadingIndicator(model.radioPlaybackStateSignal) { playbackStateSignal =>
+      playbackStateSignal.map { currentRadioState =>
 
         def iconClass(stop: Boolean): String =
           val baseClass = "btnIcon"
-          if currentSourceState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
+          if currentRadioState.playbackEnabled == stop then baseClass else baseClass + " btnIconDisabled"
 
-        currentSourceState.currentSource.fold(List.empty) { source =>
+        currentRadioState.currentSource.fold(List.empty) { source =>
           val btnStartPlayback =
             button(
               idAttr := "btnStartRadioPlayback",
               onClick --> { _ => model.startRadioPlayback() },
-              disabled := currentSourceState.playbackEnabled,
+              disabled := currentRadioState.playbackEnabled,
               img(
                 src := "/playback-start.svg",
                 alt := "Start playback",
@@ -109,7 +109,7 @@ object Main:
             button(
               idAttr := "btnStopRadioPlayback",
               onClick --> { _ => model.stopRadioPlayback() },
-              disabled := !currentSourceState.playbackEnabled,
+              disabled := !currentRadioState.playbackEnabled,
               img(
                 src := "/playback-stop.svg",
                 alt := "Stop playback",

@@ -123,16 +123,16 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     model.radioSourcesSignal.asInstanceOf[StrictSignal[Option[Try[RadioModel.RadioSources]]]].now() shouldBe empty
   }
 
-  "initCurrentSource" should "fetch the current radio source from the server" in {
+  "initRadioPlaybackState" should "fetch the current radio source from the server" in {
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
         Future.successful(DummyUIModel.CurrentSource)
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "record an exception when loading the current radio source from the server" in {
@@ -143,15 +143,15 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
   }
 
   it should "initially have a value of None" in {
     val model = new DefaultUIModel(new RadioService(ServiceUrl))
 
-    model.currentSourceStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
+    model.radioPlaybackStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
       .now() shouldBe empty
   }
 
@@ -166,10 +166,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
     model.startRadioPlayback()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "handle a failed update" in {
@@ -184,10 +184,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
     model.startRadioPlayback()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
   }
 
   "stopRadioPlayback" should "update the playback state" in {
@@ -201,10 +201,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
     model.stopRadioPlayback()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(expCurrentSource)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expCurrentSource)))
   }
 
   it should "handle a failed update" in {
@@ -218,10 +218,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
 
     val model = new DefaultUIModel(service)
-    model.initCurrentSource()
+    model.initRadioPlaybackState()
     model.stopRadioPlayback()
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
   }
 
   "changeRadioSource" should "change the current radio source successfully" in {
@@ -238,7 +238,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.changeRadioSource(newSourceID)
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
   }
 
   it should "handle a failed change of the current radio source" in {
@@ -251,7 +251,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     val model = new DefaultUIModel(service)
     model.changeRadioSource("someSourceID")
 
-    assertSignalValue(model.currentSourceStateSignal, Some(Failure(exception)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
   }
 
   "shutdown" should "shutdown the player server" in {
@@ -276,7 +276,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     model.shutdown()
 
     Future {
-      model.currentSourceStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
+      model.radioPlaybackStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
         .now() match
         case Some(Failure(exception)) =>
           exception shouldBe a[IllegalStateException]

@@ -32,14 +32,14 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** Stores the current list of radio sources. */
   private val radioSourcesVar: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
-  /** Stores the state of the current radio source. */
-  private val currentSourceVar: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
+  /** Stores the current radio playback state. */
+  private val radioPlaybackStateVar: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
 
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
-  override val currentSourceStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
-    currentSourceVar.signal
+  override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
+    radioPlaybackStateVar.signal
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -52,7 +52,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
       radioSourcesVar.set(Some(triedSources.map(_.sources)))
     }
 
-  override def initCurrentSource(): Unit =
+  override def initRadioPlaybackState(): Unit =
     radioService.loadCurrentSource() onComplete { triedCurrentSource =>
       val radioPlaybackState = triedCurrentSource map { source =>
         UIModel.RadioPlaybackState(currentSource = source.optCurrentSource,
@@ -60,7 +60,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
           playbackEnabled = source.playbackEnabled,
           titleInfo = "")
       }
-      currentSourceVar.set(Some(radioPlaybackState))
+      radioPlaybackStateVar.set(Some(radioPlaybackState))
     }
 
   override def startRadioPlayback(): Unit =
@@ -75,12 +75,12 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
 
   override def changeRadioSource(sourceID: String): Unit =
     radioService.changeCurrentSource(sourceID) onComplete {
-      case Success(_) => initCurrentSource()
-      case Failure(exception) => currentSourceVar set Some(Failure(exception))
+      case Success(_) => initRadioPlaybackState()
+      case Failure(exception) => radioPlaybackStateVar set Some(Failure(exception))
     }
 
   override def shutdown(): Unit =
-    currentSourceVar set Some(Failure(new IllegalStateException("Server is no longer available.")))
+    radioPlaybackStateVar set Some(Failure(new IllegalStateException("Server is no longer available.")))
     radioService.shutdown()
 
   /**
@@ -93,10 +93,10 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   private def updatePlaybackState(triedResult: Try[Unit], playbackEnabled: Boolean): Unit =
     triedResult match
       case Success(_) =>
-        currentSourceVar.update { optState =>
+        radioPlaybackStateVar.update { optState =>
           optState.map { triedState =>
             triedState.map(_.copy(playbackEnabled = playbackEnabled))
           }
         }
       case Failure(exception) =>
-        currentSourceVar set Some(Failure(exception))
+        radioPlaybackStateVar set Some(Failure(exception))
