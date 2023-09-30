@@ -20,7 +20,7 @@ import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.{EventStream, Observer, Signal}
 import com.raquo.airstream.ownership.ManualOwner
-import com.raquo.airstream.state.StrictSignal
+import com.raquo.airstream.state.{StrictSignal, Var}
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.AsyncFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -64,15 +64,23 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
    */
   private def assertSignal[A](signal: Signal[A])(test: A => Boolean): Future[Assertion] =
     val promise = Promise[Boolean]()
-    implicit val owner: ManualOwner = new ManualOwner
-    val signalChanges = signal.changes
-      .filter(test)
-      .map(_ => true)
-    val timeout = EventStream.delay(SignalTimeoutMs, false, emitOnce = true)
-    val observer = Observer[Boolean](f => promise.success(f))
-    signalChanges.addObserver(observer)
-    timeout.addObserver(observer)
-    promise.future.map { result => result shouldBe true } andThen { _ => owner.killSubscriptions() }
+
+    // Test the current value first. It will not occur in the changes stream.
+    val currentValue = signal.asInstanceOf[StrictSignal[A]].now()
+    if test(currentValue) then
+      Future {
+        true shouldBe true
+      }
+    else
+      implicit val owner: ManualOwner = new ManualOwner
+      val signalChanges = signal.changes
+        .filter(test)
+        .map(_ => true)
+      val timeout = EventStream.delay(SignalTimeoutMs, false, emitOnce = true)
+      val observer = Observer[Boolean](f => promise.success(f))
+      signalChanges.addObserver(observer)
+      timeout.addObserver(observer)
+      promise.future.map { result => result shouldBe true } andThen { _ => owner.killSubscriptions() }
 
   /**
    * Helper function for checking a signal against a specific value. This
@@ -120,14 +128,11 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   it should "initially have a value of None" in {
     val model = new DefaultUIModel(new RadioService(ServiceUrl))
 
-    model.radioSourcesSignal.asInstanceOf[StrictSignal[Option[Try[RadioModel.RadioSources]]]].now() shouldBe empty
+    assertSignalValue(model.radioSourcesSignal, None)
   }
 
   "initRadioPlaybackState" should "fetch the current radio source from the server" in {
-    val service = new RadioService(ServiceUrl) {
-      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(DummyUIModel.CurrentSource)
-    }
+    val service = new RadioServiceTestImpl
 
     val model = new DefaultUIModel(service)
     model.initRadioPlaybackState()
@@ -137,8 +142,24 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   it should "record an exception when loading the current radio source from the server" in {
     val exception = new IllegalStateException("Test exception when loading the current radio source.")
+    val service = new RadioServiceTestImpl {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.failed(exception)
+    }
+
+    val model = new DefaultUIModel(service)
+    model.initRadioPlaybackState()
+
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
+  }
+
+  it should "record an exception when registering an event listener" in {
+    val exception = new IllegalStateException("Test exception when registering a radio event listener.")
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(DummyUIModel.CurrentSource)
+
+      override def registerEventListener(listener: RadioModel.RadioMessage => Unit): Future[Unit] =
         Future.failed(exception)
     }
 
@@ -151,13 +172,13 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   it should "initially have a value of None" in {
     val model = new DefaultUIModel(new RadioService(ServiceUrl))
 
-    model.radioPlaybackStateSignal.asInstanceOf[StrictSignal[Option[Try[RadioService.CurrentSourceState]]]]
-      .now() shouldBe empty
+    assertSignalValue(model.radioPlaybackStateSignal, None)
   }
 
   "startRadioPlayback" should "update the playback state" in {
     val currentSourceState = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
-    val service = new RadioService(ServiceUrl) {
+    val initialRadioState = DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false)
+    val service = new RadioServiceTestImpl {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
         Future.successful(currentSourceState)
 
@@ -167,18 +188,17 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
     val model = new DefaultUIModel(service)
     model.initRadioPlaybackState()
-    model.startRadioPlayback()
 
-    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(initialRadioState))) flatMap { _ =>
+      model.startRadioPlayback()
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    }
   }
 
   it should "handle a failed update" in {
     val exception = new IllegalStateException("Test exception when starting playback.")
     val currentSourceState = DummyUIModel.CurrentSource.copy(playbackEnabled = false)
-    val service = new RadioService(ServiceUrl) {
-      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(currentSourceState)
-
+    val service = new RadioServiceTestImpl {
       override def startPlayback(): Future[Unit] =
         Future.failed(exception)
     }
@@ -192,27 +212,24 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   "stopRadioPlayback" should "update the playback state" in {
     val expCurrentSource = DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false)
-    val service = new RadioService(ServiceUrl) {
-      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(DummyUIModel.CurrentSource)
-
+    val service = new RadioServiceTestImpl {
       override def stopPlayback(): Future[Unit] =
         Future.successful(())
     }
 
     val model = new DefaultUIModel(service)
     model.initRadioPlaybackState()
-    model.stopRadioPlayback()
 
-    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expCurrentSource)))
+    assertSignalValue(model.radioPlaybackStateSignal,
+      Some(Success(DummyUIModel.TestRadioPlaybackState))) flatMap { _ =>
+      model.stopRadioPlayback()
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expCurrentSource)))
+    }
   }
 
   it should "handle a failed update" in {
     val exception = new IllegalStateException("Test exception when stopping playback.")
-    val service = new RadioService(ServiceUrl) {
-      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(DummyUIModel.CurrentSource)
-
+    val service = new RadioServiceTestImpl {
       override def stopPlayback(): Future[Unit] =
         Future.failed(exception)
     }
@@ -226,19 +243,21 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   "changeRadioSource" should "change the current radio source successfully" in {
     val newSourceID = "theNewCurrentRadioSource"
+    val newSourceVar: Var[String] = Var("")
+
     val service = new RadioService(ServiceUrl) {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
         Future.successful(DummyUIModel.CurrentSource)
 
       override def changeCurrentSource(id: String): Future[Unit] =
-        if id == newSourceID then Future.successful(())
-        else Future.failed(new IllegalArgumentException("Unexpected source ID: " + id))
+        newSourceVar set id
+        Future.successful(())
     }
 
     val model = new DefaultUIModel(service)
     model.changeRadioSource(newSourceID)
 
-    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    assertSignalValue(newSourceVar.signal, newSourceID)
   }
 
   it should "handle a failed change of the current radio source" in {
@@ -283,3 +302,68 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
         case v => fail("Unexpected value: " + v)
     }
   }
+
+  "The event listener" should "process a radio message" in {
+    //TODO: Testing of the event listener needs to be extended later. The current implementation is just a dummy
+    //      to allow for manual testing of the web socket connection.
+    val service = new RadioServiceTestImpl
+    val model = new DefaultUIModel(service)
+    model.initRadioPlaybackState()
+
+    assertSignalValue(model.radioPlaybackStateSignal,
+      Some(Success(DummyUIModel.TestRadioPlaybackState))) flatMap { _ =>
+      val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
+      service.sendRadioMessage(radioMessage)
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+    }
+  }
+
+  it should "be registered only once" in {
+    val service = new RadioServiceTestImpl
+    val model = new DefaultUIModel(service)
+    model.initRadioPlaybackState()
+
+    assertSignalValue(model.radioPlaybackStateSignal,
+      Some(Success(DummyUIModel.TestRadioPlaybackState))) flatMap { _ =>
+      model.initRadioPlaybackState()
+      val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
+      Future {
+        service.sendRadioMessage(radioMessage)
+      } flatMap { _ =>
+        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+      }
+    }
+  }
+
+  /**
+   * A test implementation of [[RadioService]] that provides some default
+   * implementations for functions that are frequently used in tests.
+   */
+  private class RadioServiceTestImpl extends RadioService(ServiceUrl):
+    /** Stores the listener function passed to ''registerEventListener()''. */
+    private var listener: RadioModel.RadioMessage => Unit = _
+
+    override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+      Future.successful(DummyUIModel.CurrentSource)
+
+    override def registerEventListener(l: RadioModel.RadioMessage => Unit): Future[Unit] =
+      if listener != null then
+        // To test that this function is called only once, a second invocation resets the listener.
+        listener = null
+        l(RadioModel.RadioMessage("ERROR", "Unexpected registerEventListener() invocation"))
+      else
+        listener = l
+      Future.successful(())
+
+    /**
+     * Makes sure that a listener function has been registered and invokes it
+     * with the given message.
+     *
+     * @param message the message to pass to the listener
+     */
+    def sendRadioMessage(message: RadioModel.RadioMessage): Unit =
+      listener should not be null
+      listener(message)
+  end RadioServiceTestImpl
