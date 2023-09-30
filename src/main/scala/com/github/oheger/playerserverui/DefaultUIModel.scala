@@ -21,6 +21,7 @@ import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
+import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -41,6 +42,13 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
     radioPlaybackStateVar.signal
 
+  /**
+   * A flag to record whether the listener for radio message has already been
+   * registered. This is used to ensure that the listener is only registered
+   * once.
+   */
+  private var radioMessageListenerRegistered = false
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   /**
@@ -53,7 +61,17 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     }
 
   override def initRadioPlaybackState(): Unit =
-    radioService.loadCurrentSource() onComplete { triedCurrentSource =>
+    // To avoid race conditions, the service calls are intentionally done sequentially.
+    val initFuture = for
+      currentSource <- radioService.loadCurrentSource()
+      futListener = if radioMessageListenerRegistered then
+        Future.successful(())
+      else
+        radioService.registerEventListener(handleRadioMessage)
+      _ <- futListener
+    yield currentSource
+
+    initFuture onComplete { triedCurrentSource =>
       val radioPlaybackState = triedCurrentSource map { source =>
         UIModel.RadioPlaybackState(currentSource = source.optCurrentSource,
           replacementSource = None,
@@ -61,16 +79,18 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
           titleInfo = "")
       }
       radioPlaybackStateVar.set(Some(radioPlaybackState))
+      // Setting the variable here should hopefully be safe in JavaScript.
+      radioMessageListenerRegistered = true
     }
 
   override def startRadioPlayback(): Unit =
     radioService.startPlayback() onComplete { res =>
-      updatePlaybackState(res, playbackEnabled = true)
+      updateRadioPlaybackEnabledState(res, playbackEnabled = true)
     }
 
   override def stopRadioPlayback(): Unit =
     radioService.stopPlayback() onComplete { res =>
-      updatePlaybackState(res, playbackEnabled = false)
+      updateRadioPlaybackEnabledState(res, playbackEnabled = false)
     }
 
   override def changeRadioSource(sourceID: String): Unit =
@@ -84,19 +104,44 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     radioService.shutdown()
 
   /**
-   * Changes the playback state to the given value. This function is called
-   * when the user has started or stopped playback.
+   * Updates the value of the current radio playback state. This function
+   * takes care of calling the ''map()'' functions on the ''Option'' and the
+   * ''Try'' that wrap the radio state. If a value is available, the given
+   * update function is invoked.
+   *
+   * @param update the function to update the state
+   */
+  private def updateRadioPlaybackState(update: UIModel.RadioPlaybackState => UIModel.RadioPlaybackState): Unit =
+    radioPlaybackStateVar.update { optState =>
+      optState.map { triedState =>
+        triedState.map(update)
+      }
+    }
+
+  /**
+   * Changes the radio playback enabled state to the given value. This function
+   * is called when the user has started or stopped playback.
    *
    * @param triedResult     the outcome of the change operation
    * @param playbackEnabled the new playback enabled state
    */
-  private def updatePlaybackState(triedResult: Try[Unit], playbackEnabled: Boolean): Unit =
+  private def updateRadioPlaybackEnabledState(triedResult: Try[Unit], playbackEnabled: Boolean): Unit =
     triedResult match
       case Success(_) =>
-        radioPlaybackStateVar.update { optState =>
-          optState.map { triedState =>
-            triedState.map(_.copy(playbackEnabled = playbackEnabled))
-          }
+        updateRadioPlaybackState { state =>
+          state.copy(playbackEnabled = playbackEnabled)
         }
       case Failure(exception) =>
         radioPlaybackStateVar set Some(Failure(exception))
+
+  /**
+   * The function to handle [[RadioModel.RadioMessage]]s received from the
+   * server. Depending on the message, the radio state is updated accordingly.
+   * TODO: This is currently a dummy implementation.
+   *
+   * @param message the radio message from the server
+   */
+  private def handleRadioMessage(message: RadioModel.RadioMessage): Unit =
+    updateRadioPlaybackState { state =>
+      state.copy(titleInfo = message.toString)
+    }
