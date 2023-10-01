@@ -288,6 +288,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
       model.shutdownCount should be(1)
     }
   }
+
+  it should "display title information" in {
+    val TitleInfo = "Test Artist / Test Song"
+    val radioState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = TitleInfo)
+    val model = new UIModelTestImpl
+    model setTriedRadioPlaybackState Success(radioState)
+    val element = Main.radioPlaybackStateElement(model)
+
+    testDom(element) {
+      $(element.ref).find(s"p:contains('$TitleInfo')").length should be(1)
+    }
+  }
 end MainSpec
 
 /**
