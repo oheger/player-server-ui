@@ -21,7 +21,6 @@ import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
 import com.raquo.airstream.state.Var
 
-import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -61,17 +60,8 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     }
 
   override def initRadioPlaybackState(): Unit =
-    // To avoid race conditions, the service calls are intentionally done sequentially.
-    val initFuture = for
-      currentSource <- radioService.loadCurrentSource()
-      futListener = if radioMessageListenerRegistered then
-        Future.successful(())
-      else
-        radioService.registerEventListener(handleRadioMessage)
-      _ <- futListener
-    yield currentSource
-
-    initFuture onComplete { triedCurrentSource =>
+  // To avoid race conditions, the service calls are intentionally done sequentially.
+    radioService.loadCurrentSource() onComplete { triedCurrentSource =>
       val radioPlaybackState = triedCurrentSource map { source =>
         UIModel.RadioPlaybackState(currentSource = source.optCurrentSource,
           replacementSource = None,
@@ -79,8 +69,11 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
           titleInfo = "")
       }
       radioPlaybackStateVar.set(Some(radioPlaybackState))
-      // Setting the variable here should hopefully be safe in JavaScript.
-      radioMessageListenerRegistered = true
+
+      if !radioMessageListenerRegistered then
+        registerRadioMessageListener()
+        // Setting the variable here should hopefully be safe in JavaScript.
+        radioMessageListenerRegistered = true
     }
 
   override def startRadioPlayback(): Unit =
@@ -135,6 +128,16 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
         radioPlaybackStateVar set Some(Failure(exception))
 
   /**
+   * Registers the listener for radio messages. The registration yields a
+   * ''Future'' that completes when the underlying web socket connection is no
+   * longer available. This function registers a completion function that
+   * evaluates the result the connection future was completed with.
+   */
+  private def registerRadioMessageListener(): Unit =
+    val futRegistration = radioService.registerEventListener(handleRadioMessage)
+    futRegistration onComplete radioMessageConnectionCompleted
+
+  /**
    * The function to handle [[RadioModel.RadioMessage]]s received from the
    * server. Depending on the message, the radio state is updated accordingly.
    * TODO: This is currently a dummy implementation.
@@ -145,3 +148,17 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     updateRadioPlaybackState { state =>
       state.copy(titleInfo = message.toString)
     }
+
+  /**
+   * A function that is called when the web socket connection for the radio
+   * events is closed.
+   *
+   * @param result the value of the completed future
+   */
+  private def radioMessageConnectionCompleted(result: Try[Unit]): Unit =
+    result match
+      case Failure(exception) =>
+        radioPlaybackStateVar set Some(Failure(exception))
+      case _ =>
+        println("Radio message connection closed. Trying to reestablish it.")
+        registerRadioMessageListener()
