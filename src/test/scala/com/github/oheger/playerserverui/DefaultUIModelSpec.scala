@@ -95,6 +95,26 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   private def assertSignalValue[A](signal: Signal[A], expectedValue: A): Future[Assertion] =
     assertSignal(signal)(_ == expectedValue)
 
+  /**
+   * Runs a test for radio event processing. A test model is created, and the
+   * radio event listener is registered asynchronously. When this is done the
+   * given test function is invoked with the model and the rest radio service.
+   *
+   * @param test the function that runs the test
+   * @return the assertion returned by the test function
+   */
+  private def radioEventListenerTest(test: (DefaultUIModel, RadioServiceTestImpl) => Future[Assertion]):
+  Future[Assertion] =
+    val service = new RadioServiceTestImpl
+    val model = new DefaultUIModel(service)
+    model.initRadioPlaybackState()
+
+    for
+      _ <- assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+      _ <- assertSignalValue(service.listenerRegistrationSignal, 1)
+      result <- test(model, service)
+    yield result
+
   "initRadioSources" should "fetch the radio sources from the server" in {
     val RadioSourcesList = List(
       RadioModel.RadioSource("s1", "RadioSource1", 1),
@@ -155,18 +175,12 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   it should "record an exception when registering an event listener" in {
     val exception = new IllegalStateException("Test exception when registering a radio event listener.")
-    val service = new RadioService(ServiceUrl) {
-      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
-        Future.successful(DummyUIModel.CurrentSource)
 
-      override def registerEventListener(listener: RadioModel.RadioMessage => Unit): Future[Unit] =
-        Future.failed(exception)
+    radioEventListenerTest { (model, service) =>
+      service.completeRadioMessageConnection(Failure(exception))
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
     }
-
-    val model = new DefaultUIModel(service)
-    model.initRadioPlaybackState()
-
-    assertSignalValue(model.radioPlaybackStateSignal, Some(Failure(exception)))
   }
 
   it should "initially have a value of None" in {
@@ -306,12 +320,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   "The event listener" should "process a radio message" in {
     //TODO: Testing of the event listener needs to be extended later. The current implementation is just a dummy
     //      to allow for manual testing of the web socket connection.
-    val service = new RadioServiceTestImpl
-    val model = new DefaultUIModel(service)
-    model.initRadioPlaybackState()
-
-    assertSignalValue(model.radioPlaybackStateSignal,
-      Some(Success(DummyUIModel.TestRadioPlaybackState))) flatMap { _ =>
+    radioEventListenerTest { (model, service) =>
       val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
       val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
       service.sendRadioMessage(radioMessage)
@@ -320,12 +329,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   }
 
   it should "be registered only once" in {
-    val service = new RadioServiceTestImpl
-    val model = new DefaultUIModel(service)
-    model.initRadioPlaybackState()
-
-    assertSignalValue(model.radioPlaybackStateSignal,
-      Some(Success(DummyUIModel.TestRadioPlaybackState))) flatMap { _ =>
+    radioEventListenerTest { (model, service) =>
       model.initRadioPlaybackState()
       val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
       val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
@@ -337,13 +341,30 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
   }
 
+  it should "be registered anew if the connection is closed in a normal way" in {
+    radioEventListenerTest { (model, service) =>
+      service.completeRadioMessageConnection()
+
+      assertSignalValue(service.listenerRegistrationSignal, 2)
+    }
+  }
+
   /**
    * A test implementation of [[RadioService]] that provides some default
    * implementations for functions that are frequently used in tests.
    */
   private class RadioServiceTestImpl extends RadioService(ServiceUrl):
+    /** A var to track the number of event listener registrations. */
+    private val listenerRegistrationVar = Var(0)
+
+    /** A promise to indicate the completion of the current WS connection. */
+    private var promiseWebSocketConnection: Promise[Unit] = _
+
     /** Stores the listener function passed to ''registerEventListener()''. */
     private var listener: RadioModel.RadioMessage => Unit = _
+
+    /** A signal to track the number of listener registrations. */
+    val listenerRegistrationSignal: StrictSignal[Int] = listenerRegistrationVar.signal
 
     override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
       Future.successful(DummyUIModel.CurrentSource)
@@ -355,7 +376,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
         l(RadioModel.RadioMessage("ERROR", "Unexpected registerEventListener() invocation"))
       else
         listener = l
-      Future.successful(())
+
+      listenerRegistrationVar.update(_ + 1)
+      promiseWebSocketConnection = Promise()
+      promiseWebSocketConnection.future
 
     /**
      * Makes sure that a listener function has been registered and invokes it
@@ -366,4 +390,15 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     def sendRadioMessage(message: RadioModel.RadioMessage): Unit =
       listener should not be null
       listener(message)
+
+    /**
+     * Completes the web socket connection for receiving radio messages with
+     * the given result. This also resets the listener.
+     *
+     * @param result the result to complete the future for the connection
+     */
+    def completeRadioMessageConnection(result: Try[Unit] = Success(())): Unit =
+      listener should not be null
+      listener = null
+      promiseWebSocketConnection.complete(result)
   end RadioServiceTestImpl
