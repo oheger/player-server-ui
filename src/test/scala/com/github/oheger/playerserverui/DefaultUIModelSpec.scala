@@ -55,7 +55,8 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
   /**
    * Helper function for checking whether a signal takes a specific value. The
    * function checks asynchronously whether a value as specified by a condition
-   * is found within a timeout. Otherwise, a failed assertion is returned.
+   * is found within a timeout. Otherwise, a failed assertion is returned that
+   * contains the list of values seen from the signal.
    *
    * @param signal the signal to test
    * @param test   the function to check the signal value
@@ -64,23 +65,28 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
    */
   private def assertSignal[A](signal: Signal[A])(test: A => Boolean): Future[Assertion] =
     val promise = Promise[Boolean]()
-
+    implicit val owner: ManualOwner = new ManualOwner
     // Test the current value first. It will not occur in the changes stream.
-    val currentValue = signal.asInstanceOf[StrictSignal[A]].now()
-    if test(currentValue) then
+    if test(signal.observe.now()) then
       Future {
         true shouldBe true
       }
     else
-      implicit val owner: ManualOwner = new ManualOwner
+      val seenValuesVar: Var[List[A]] = Var(Nil)
       val signalChanges = signal.changes
-        .filter(test)
+        .filter { value =>
+          seenValuesVar.update(value :: _)
+          test(value)
+        }
         .map(_ => true)
       val timeout = EventStream.delay(SignalTimeoutMs, false, emitOnce = true)
-      val observer = Observer[Boolean](f => promise.success(f))
+      val observer = Observer[Boolean](f => promise.trySuccess(f))
       signalChanges.addObserver(observer)
       timeout.addObserver(observer)
-      promise.future.map { result => result shouldBe true } andThen { _ => owner.killSubscriptions() }
+      promise.future.map { result =>
+        if result then true shouldBe true
+        else seenValuesVar.signal.observe.now() should be(List("*"))
+      } andThen { _ => owner.killSubscriptions() }
 
   /**
    * Helper function for checking a signal against a specific value. This
