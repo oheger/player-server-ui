@@ -47,7 +47,7 @@ object DummyUIModel extends UIModel:
    * the radio service.
    */
   final val CurrentSource = RadioService.CurrentSourceState(
-    Some(RadioModel.RadioSource("s42", "The Current Source", 17)),
+    Some(DummyRadioSources.sources(4)),
     playbackEnabled = true
   )
 

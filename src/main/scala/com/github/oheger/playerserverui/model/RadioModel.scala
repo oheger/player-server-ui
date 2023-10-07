@@ -87,3 +87,9 @@ object RadioModel:
   implicit val radioSourceDecoder: JsonDecoder[RadioSource] = DeriveJsonDecoder.gen[RadioSource]
   implicit val radioSourcesDecoder: JsonDecoder[RadioSources] = DeriveJsonDecoder.gen[RadioSources]
   implicit val radioMessageDecoder: JsonDecoder[RadioMessage] = DeriveJsonDecoder.gen[RadioMessage]
+
+  /**
+   * Constant for an unknown radio source. This constant is used when a radio
+   * source ID cannot be resolved.
+   */
+  final val UnknownRadioSource = RadioSource("0", "Unknown", -1)
