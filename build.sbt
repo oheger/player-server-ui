@@ -20,7 +20,7 @@ lazy val VersionScalaJsDom = "2.4.0"
 lazy val VersionSttp = "3.9.0"
 
 lazy val VersionJqueryFacade = "2.1"
-lazy val VersionJsDom = "21.1.1"
+lazy val VersionJsDom = "22.1.0"
 lazy val VersionScalaTest = "3.2.16"
 lazy val VersionWebpack = "5.76.2"
 
