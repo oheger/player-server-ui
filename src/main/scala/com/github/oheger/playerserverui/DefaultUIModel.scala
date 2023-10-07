@@ -32,16 +32,66 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** Stores the current list of radio sources. */
   private val radioSourcesVar: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
-  /** Stores the current radio playback state. */
-  private val radioPlaybackStateVar: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
+  /**
+   * A Var that indicates whether the radio playback state has already been
+   * fetched.
+   */
+  private val radioPlaybackStateAvailableVar = Var(false)
+
+  /**
+   * A Var that indicates whether an exception occurred when fetching the
+   * radio playback state.
+   */
+  private val radioPlaybackStateErrorVar: Var[Option[Throwable]] = Var(None)
+
+  /**
+   * A Var for storing the ID of the current radio source if available.
+   */
+  private val radioCurrentSourceIDVar: Var[Option[String]] = Var(None)
+
+  /**
+   * A Var for storing the ID of a replacement radio source while the
+   * current source is disabled.
+   */
+  private val radioReplacementSourceIDVar: Var[Option[String]] = Var(None)
+
+  /** A Var to track whether radio playback is currently enabled. */
+  private val radioPlaybackEnabledVar = Var(false)
+
+  /** A Var to store the current title information. */
+  private val radioTitleInfoVar = Var("")
 
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
   override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
-    radioPlaybackStateVar.signal
+    for
+      available <- radioPlaybackStateAvailableVar.signal
+      optError <- radioPlaybackStateErrorVar.signal
+      optCurrent <- radioSourceFromIDSignal(radioCurrentSourceIDVar)
+      optReplace <- radioSourceFromIDSignal(radioReplacementSourceIDVar)
+      enabled <- radioPlaybackEnabledVar.signal
+      title <- radioTitleInfoVar.signal
+    yield
+      if !available then None
+      else
+        optError match
+          case Some(exception) => Some(Failure(exception))
+          case None =>
+            Some(Success(UIModel.RadioPlaybackState(optCurrent, optReplace, enabled, title)))
 
   /**
+   * A signal used for internal purposes that generates a map from the list of
+   * current radio sources using the source IDs as keys. This can be used to
+   * obtain the radio source from an ID.
+   */
+  private val radioSourcesMapSignal = radioSourcesSignal.map {
+    case Some(Success(sources)) =>
+      sources.map(source => source.id -> source).toMap
+    case _ => Map.empty
+  }
+
+/**
    * A flag to record whether the listener for radio message has already been
    * registered. This is used to ensure that the listener is only registered
    * once.
@@ -62,13 +112,17 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   override def initRadioPlaybackState(): Unit =
   // To avoid race conditions, the service calls are intentionally done sequentially.
     radioService.loadCurrentSource() onComplete { triedCurrentSource =>
-      val radioPlaybackState = triedCurrentSource map { source =>
-        UIModel.RadioPlaybackState(currentSource = source.optCurrentSource,
-          replacementSource = None,
-          playbackEnabled = source.playbackEnabled,
-          titleInfo = "")
-      }
-      radioPlaybackStateVar.set(Some(radioPlaybackState))
+      triedCurrentSource match
+        case Success(state) =>
+          radioPlaybackStateAvailableVar set true
+          radioPlaybackStateErrorVar set None
+          radioCurrentSourceIDVar set state.optCurrentSource.map(_.id)
+          radioReplacementSourceIDVar set None
+          radioPlaybackEnabledVar set state.playbackEnabled
+          radioTitleInfoVar set ""
+        case Failure(exception) =>
+          radioPlaybackStateAvailableVar set true
+          radioPlaybackStateErrorVar set Some(exception)
 
       if !radioMessageListenerRegistered then
         registerRadioMessageListener()
@@ -88,28 +142,13 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
 
   override def changeRadioSource(sourceID: String): Unit =
     radioService.changeCurrentSource(sourceID) onComplete {
-      case Success(_) => initRadioPlaybackState()
-      case Failure(exception) => radioPlaybackStateVar set Some(Failure(exception))
+      case Success(_) => radioCurrentSourceIDVar set Some(sourceID)
+      case Failure(exception) => radioPlaybackStateErrorVar set Some(exception)
     }
 
   override def shutdown(): Unit =
-    radioPlaybackStateVar set Some(Failure(new IllegalStateException("Server is no longer available.")))
+    radioPlaybackStateErrorVar set Some(new IllegalStateException("Server is no longer available."))
     radioService.shutdown()
-
-  /**
-   * Updates the value of the current radio playback state. This function
-   * takes care of calling the ''map()'' functions on the ''Option'' and the
-   * ''Try'' that wrap the radio state. If a value is available, the given
-   * update function is invoked.
-   *
-   * @param update the function to update the state
-   */
-  private def updateRadioPlaybackState(update: UIModel.RadioPlaybackState => UIModel.RadioPlaybackState): Unit =
-    radioPlaybackStateVar.update { optState =>
-      optState.map { triedState =>
-        triedState.map(update)
-      }
-    }
 
   /**
    * Changes the radio playback enabled state to the given value. This function
@@ -121,11 +160,9 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   private def updateRadioPlaybackEnabledState(triedResult: Try[Unit], playbackEnabled: Boolean): Unit =
     triedResult match
       case Success(_) =>
-        updateRadioPlaybackState { state =>
-          state.copy(playbackEnabled = playbackEnabled)
-        }
+        radioPlaybackEnabledVar set playbackEnabled
       case Failure(exception) =>
-        radioPlaybackStateVar set Some(Failure(exception))
+        radioPlaybackStateErrorVar set Some(exception)
 
   /**
    * Registers the listener for radio messages. The registration yields a
@@ -145,9 +182,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    * @param message the radio message from the server
    */
   private def handleRadioMessage(message: RadioModel.RadioMessage): Unit =
-    updateRadioPlaybackState { state =>
-      state.copy(titleInfo = message.toString)
-    }
+    radioTitleInfoVar set message.toString
 
   /**
    * A function that is called when the web socket connection for the radio
@@ -158,7 +193,23 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   private def radioMessageConnectionCompleted(result: Try[Unit]): Unit =
     result match
       case Failure(exception) =>
-        radioPlaybackStateVar set Some(Failure(exception))
+        radioPlaybackStateErrorVar set Some(exception)
       case _ =>
         println("Radio message connection closed. Trying to reestablish it.")
         registerRadioMessageListener()
+
+  /**
+   * Returns a [[Signal]] that map the ID of the radio source in the given
+   * [[Var]] to the referenced radio source. If the ID cannot be resolved, the
+   * signal reports a dummy radio source.
+   * @param idVar the Var with the optional radio source ID
+   * @return a signal with the optional resolved radio source
+   */
+  private def radioSourceFromIDSignal(idVar: Var[Option[String]]): Signal[Option[RadioModel.RadioSource]] =
+    for
+      optID <- idVar.signal
+      sourceMap <- radioSourcesMapSignal
+    yield
+      optID map { id =>
+        sourceMap.getOrElse(id, RadioModel.UnknownRadioSource)
+      }
