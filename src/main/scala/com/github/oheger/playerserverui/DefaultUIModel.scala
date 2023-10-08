@@ -91,7 +91,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     case _ => Map.empty
   }
 
-/**
+  /**
    * A flag to record whether the listener for radio message has already been
    * registered. This is used to ensure that the listener is only registered
    * once.
@@ -177,12 +177,20 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /**
    * The function to handle [[RadioModel.RadioMessage]]s received from the
    * server. Depending on the message, the radio state is updated accordingly.
-   * TODO: This is currently a dummy implementation.
    *
    * @param message the radio message from the server
    */
   private def handleRadioMessage(message: RadioModel.RadioMessage): Unit =
-    radioTitleInfoVar set message.toString
+    message.radioMessageTypeOption foreach {
+      case RadioModel.RadioMessageType.SourceChanged =>
+        radioCurrentSourceIDVar set Some(message.payload)
+      case RadioModel.RadioMessageType.ReplacementStart =>
+        radioReplacementSourceIDVar set Some(message.payload)
+      case RadioModel.RadioMessageType.ReplacementEnd =>
+        radioReplacementSourceIDVar set None
+      case RadioModel.RadioMessageType.TitleInfo =>
+        radioTitleInfoVar set message.payload
+    }
 
   /**
    * A function that is called when the web socket connection for the radio
@@ -202,6 +210,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    * Returns a [[Signal]] that map the ID of the radio source in the given
    * [[Var]] to the referenced radio source. If the ID cannot be resolved, the
    * signal reports a dummy radio source.
+   *
    * @param idVar the Var with the optional radio source ID
    * @return a signal with the optional resolved radio source
    */
