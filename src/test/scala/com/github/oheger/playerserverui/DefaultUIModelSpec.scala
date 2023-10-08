@@ -123,9 +123,9 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
    * @param test the function that runs the test
    * @return the assertion returned by the test function
    */
-  private def radioEventListenerTest(test: (DefaultUIModel, RadioServiceTestImpl) => Future[Assertion]):
+  private def radioEventListenerTest(test: (DefaultUIModel, RadioServiceTestImpl) => Future[Assertion],
+                                     service: RadioServiceTestImpl = new RadioServiceTestImpl):
   Future[Assertion] =
-    val service = new RadioServiceTestImpl
     val model = createInitializedModel(service)
 
     for
@@ -314,42 +314,44 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     shutdownCalls should be(1)
   }
 
-    it should "update the radio playback state" in {
-      val service = new RadioService(ServiceUrl) {
-        override def shutdown(): Unit = {}
-      }
-
-      val model = createInitializedModel(service)
-      model.shutdown()
-
-      assertSignal(model.radioPlaybackStateSignal) {
-        case Some(Failure(exception)) if exception.isInstanceOf[IllegalStateException] => true
-        case _ => false
-      }
+  it should "update the radio playback state" in {
+    val service = new RadioService(ServiceUrl) {
+      override def shutdown(): Unit = {}
     }
 
-  "The event listener" should "process a radio message" in {
-    //TODO: Testing of the event listener needs to be extended later. The current implementation is just a dummy
-    //      to allow for manual testing of the web socket connection.
-    radioEventListenerTest { (model, service) =>
-      val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
-      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
-      service.sendRadioMessage(radioMessage)
-      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+    val model = createInitializedModel(service)
+    model.shutdown()
+
+    assertSignal(model.radioPlaybackStateSignal) {
+      case Some(Failure(exception)) if exception.isInstanceOf[IllegalStateException] => true
+      case _ => false
     }
   }
 
-  it should "be registered only once" in {
-    radioEventListenerTest { (model, service) =>
-      model.initRadioPlaybackState()
-      val radioMessage = RadioModel.RadioMessage("someMessageType", "Some message payload.")
-      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = radioMessage.toString)
-      Future {
-        service.sendRadioMessage(radioMessage)
-      } flatMap { _ =>
-        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
-      }
+  "The event listener" should "be registered only once" in {
+    val updatedCurrentSource = DummyUIModel.DummyRadioSources.sources(1)
+    val updatedCurrentSourceState = DummyUIModel.CurrentSource.copy(optCurrentSource = Some(updatedCurrentSource))
+    var currentSourceResponses = List(DummyUIModel.CurrentSource, updatedCurrentSourceState)
+    val radioService = new RadioServiceTestImpl {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        val result = currentSourceResponses.head
+        currentSourceResponses = currentSourceResponses.tail
+        Future.successful(result)
     }
+
+    radioEventListenerTest(service = radioService,
+      test = (model, service) =>
+        model.initRadioPlaybackState()
+        val expectedInitState = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(updatedCurrentSource))
+        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedInitState))) flatMap { _ =>
+          val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, "?")
+          val expectedState =
+            DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(RadioModel.UnknownRadioSource))
+          service.sendRadioMessage(radioMessage)
+
+          assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+        }
+    )
   }
 
   it should "be registered anew if the connection is closed in a normal way" in {
@@ -357,6 +359,58 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
       service.completeRadioMessageConnection()
 
       assertSignalValue(service.listenerRegistrationSignal, 2)
+    }
+  }
+
+  it should "handle a SourceChanged radio message" in {
+    radioEventListenerTest { (model, service) =>
+      val newSource = DummyUIModel.DummyRadioSources.sources(1)
+      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, newSource.id)
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(newSource))
+
+      service.sendRadioMessage(radioMessage)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+    }
+  }
+
+  it should "handle a ReplacementStart radio message" in {
+    radioEventListenerTest { (model, service) =>
+      val replacementSource = DummyUIModel.DummyRadioSources.sources(2)
+      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementStart.toString,
+        replacementSource.id)
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(replacementSource = Some(replacementSource))
+
+      service.sendRadioMessage(radioMessage)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+    }
+  }
+
+  it should "handle a ReplacementEnd radio message" in {
+    radioEventListenerTest { (model, service) =>
+      val replacementSource = DummyUIModel.DummyRadioSources.sources(3)
+      val radioMessageStart = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementStart.toString,
+        replacementSource.id)
+      val radioMessageEnd = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementEnd.toString,
+        DummyUIModel.CurrentSource.optCurrentSource.get.id)
+
+      service.sendRadioMessage(radioMessageStart)
+      service.sendRadioMessage(radioMessageEnd)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
+    }
+  }
+
+  it should "handle a TitleInfo radio message" in {
+    val CurrentTitleInfo = "Dire Straits / Brothers in Arms"
+    radioEventListenerTest { (model, service) =>
+      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.TitleInfo.toString, CurrentTitleInfo)
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = CurrentTitleInfo)
+
+      service.sendRadioMessage(radioMessage)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
     }
   }
 
