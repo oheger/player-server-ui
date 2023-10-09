@@ -131,6 +131,7 @@ object Main:
           val divCurrentSource = div(
             idAttr := "currentSource",
             p(source.name),
+            p(currentRadioState.replacementSource.map(_.name).getOrElse("")),
             p(currentRadioState.titleInfo),
             btnStartPlayback,
             btnStopPlayback,
