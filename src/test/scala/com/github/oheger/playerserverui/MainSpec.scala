@@ -300,6 +300,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find(s"p:contains('$TitleInfo')").length should be(1)
     }
   }
+
+  it should "display a replacement source" in {
+    val replacementSource = DummyUIModel.DummyRadioSources.sources(5)
+    val radioState = DummyUIModel.TestRadioPlaybackState.copy(replacementSource = Some(replacementSource))
+    val model = new UIModelTestImpl
+    model setTriedRadioPlaybackState Success(radioState)
+    val element = Main.radioPlaybackStateElement(model)
+
+    testDom(element) {
+      $(element.ref).find(s"p:contains('${replacementSource.name}')").length should be(1)
+    }
+  }
 end MainSpec
 
 /**
