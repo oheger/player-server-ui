@@ -56,10 +56,27 @@ button:focus-visible {
 
 #currentSource {
   width: 100%;
-  border: 1px solid;
-  border-radius: 25px;
-  font-size: 1.5em;
-  padding: 10px 0;
+  margin-bottom: 10px;
+}
+
+.label {
+  text-align: start;
+  margin: 0;
+  color: gray;
+}
+
+.selectedSource {
+  font-size: x-large;
+  color: #729FCF;
+}
+
+.replacementSource {
+  font-size: large;
+  color: orange;
+}
+
+.titleInfo {
+  font-style: italic;
 }
 
 .btnIcon {

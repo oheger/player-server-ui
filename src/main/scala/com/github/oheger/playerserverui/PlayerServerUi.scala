@@ -38,7 +38,6 @@ object Main:
 
   def appElement(): Element =
     div(
-      h1("PlayerServer UI"),
       radioPlaybackStateElement(),
       radioSourcesElement()
     )
@@ -130,9 +129,17 @@ object Main:
 
           val divCurrentSource = div(
             idAttr := "currentSource",
-            p(source.name),
-            p(currentRadioState.replacementSource.map(_.name).getOrElse("")),
-            p(currentRadioState.titleInfo),
+            elementWithLabel("Selected source:", Some(source.name), "selectedSource"),
+            elementWithLabel(
+              "Replacement source:",
+              currentRadioState.replacementSource.map(_.name),
+              "replacementSource"
+            ),
+            elementWithLabel(
+              "Title info:",
+              Some(currentRadioState.titleInfo).filterNot(_.isEmpty),
+              "titleInfo"
+            ),
             btnStartPlayback,
             btnStopPlayback,
             btnShutdown
@@ -186,6 +193,28 @@ object Main:
         )
       )
     )
+
+  /**
+   * Generates a composed element consisting of a smaller label and text
+   * content with a specific style class. If the content is undefined, an
+   * empty element is returned.
+   *
+   * @param label   the text of the label
+   * @param content the optional element content
+   * @param style   the style class of the content
+   * @return the generated element
+   */
+  private def elementWithLabel(label: String, content: Option[String], style: String): Element =
+    content.fold(div()) { text =>
+      div(
+        p(className := "label",
+          label
+        ),
+        p(className := style,
+          text
+        )
+      )
+    }
 
   /**
    * Creates an [[Element]] for a [[Signal]] that shows a loading or an error
