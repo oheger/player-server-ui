@@ -116,7 +116,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
         case Success(state) =>
           radioPlaybackStateAvailableVar set true
           radioPlaybackStateErrorVar set None
-          radioCurrentSourceIDVar set state.optCurrentSource.map(_.id)
+          radioCurrentSourceIDVar set state.optCurrentSourceID
           radioReplacementSourceIDVar set None
           radioPlaybackEnabledVar set state.playbackEnabled
           radioTitleInfoVar set ""

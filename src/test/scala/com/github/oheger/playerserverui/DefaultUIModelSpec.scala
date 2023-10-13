@@ -330,7 +330,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
   "The event listener" should "be registered only once" in {
     val updatedCurrentSource = DummyUIModel.DummyRadioSources.sources(1)
-    val updatedCurrentSourceState = DummyUIModel.CurrentSource.copy(optCurrentSource = Some(updatedCurrentSource))
+    val updatedCurrentSourceState = DummyUIModel.CurrentSource.copy(optCurrentSourceID = Some(updatedCurrentSource.id))
     var currentSourceResponses = List(DummyUIModel.CurrentSource, updatedCurrentSourceState)
     val radioService = new RadioServiceTestImpl {
       override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
@@ -393,7 +393,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
       val radioMessageStart = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementStart.toString,
         replacementSource.id)
       val radioMessageEnd = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementEnd.toString,
-        DummyUIModel.CurrentSource.optCurrentSource.get.id)
+        DummyUIModel.CurrentSource.optCurrentSourceID.get)
 
       service.sendRadioMessage(radioMessageStart)
       service.sendRadioMessage(radioMessageEnd)
