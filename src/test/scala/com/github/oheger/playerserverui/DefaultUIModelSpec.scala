@@ -428,6 +428,35 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
   }
 
+  it should "handle a PlaybackStopped radio message" in {
+    radioEventListenerTest { (model, service) =>
+      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.PlaybackStopped.toString, "someID")
+      val expectedState = DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false)
+
+      service.sendRadioMessage(radioMessage)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState)))
+    }
+  }
+
+  it should "set the radio playback to enabled on receiving a SourceChanged radio message" in {
+    radioEventListenerTest { (model, service) =>
+      val radioMessage1 = RadioModel.RadioMessage(RadioModel.RadioMessageType.PlaybackStopped.toString, "someID")
+      val expectedState1 = DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false)
+      service.sendRadioMessage(radioMessage1)
+
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState1))) flatMap { _ =>
+        val newSource = DummyUIModel.DummyRadioSources.sources(1)
+        val radioMessage2 = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, newSource.id)
+        val expectedState2 = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(newSource))
+
+        service.sendRadioMessage(radioMessage2)
+
+        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState2)))
+      }
+    }
+  }
+
   /**
    * A test implementation of [[RadioService]] that provides some default
    * implementations for functions that are frequently used in tests.

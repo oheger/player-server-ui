@@ -184,12 +184,15 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     message.radioMessageTypeOption foreach {
       case RadioModel.RadioMessageType.SourceChanged =>
         radioCurrentSourceIDVar set Some(message.payload)
+        radioPlaybackEnabledVar set true
       case RadioModel.RadioMessageType.ReplacementStart =>
         radioReplacementSourceIDVar set Some(message.payload)
       case RadioModel.RadioMessageType.ReplacementEnd =>
         radioReplacementSourceIDVar set None
       case RadioModel.RadioMessageType.TitleInfo =>
         radioTitleInfoVar set message.payload
+      case RadioModel.RadioMessageType.PlaybackStopped =>
+        radioPlaybackEnabledVar set false
     }
 
   /**
