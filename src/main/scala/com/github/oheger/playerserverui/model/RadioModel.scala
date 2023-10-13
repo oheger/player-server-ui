@@ -91,7 +91,7 @@ object RadioModel:
    * An enumeration class that defines the different types of radio messages.
    */
   enum RadioMessageType:
-    case SourceChanged, ReplacementStart, ReplacementEnd, TitleInfo
+    case SourceChanged, ReplacementStart, ReplacementEnd, TitleInfo, PlaybackStopped
 
   implicit val playbackStatusDecoder: JsonDecoder[PlaybackStatus] = DeriveJsonDecoder.gen[PlaybackStatus]
   implicit val radioSourceDecoder: JsonDecoder[RadioSource] = DeriveJsonDecoder.gen[RadioSource]
