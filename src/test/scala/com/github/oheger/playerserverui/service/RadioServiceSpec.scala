@@ -189,13 +189,12 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
     futEx map { ex => ex.cause should be(exception) }
   }
 
-  it should "return information about the current source" in {
-    val currentSource =
+  it should "return information about the current source state" in {
+    val currentSourceState =
       """
         |{
-        |  "id": "id1",
-        |  "name": "currentSource",
-        |  "ranking": 10
+        |  "currentSourceId": "id1",
+        |  "replacementSourceId": "id2"
         |}
         |""".stripMargin
     val playbackState =
@@ -204,12 +203,13 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
         |  "enabled": false
         |}
         |""".stripMargin
-    val expCurrentState = RadioService.CurrentSourceState(Some("id1"), playbackEnabled = false)
+    val expCurrentState = RadioService.CurrentSourceState(Some("id1"), Some("id2"), playbackEnabled = false)
 
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>
-        checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET
-      }.thenRespond(currentSource)
+        checkUri(request)(path => path.toList == List("sources", "current")) && request.method == Method.GET &&
+          request.uri.params.get("full").contains("true")
+      }.thenRespond(currentSourceState)
       .whenRequestMatches { request =>
         checkUri(request)(path => path.toList == List("playback")) && request.method == Method.GET
       }.thenRespond(playbackState)
@@ -220,14 +220,14 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
     }
   }
 
-  it should "handle an undefined current source" in {
+  it should "handle an undefined current source and replacement source" in {
     val playbackState =
       """
         |{
         |  "enabled": true
         |}
         |""".stripMargin
-    val expCurrentState = RadioService.CurrentSourceState(None, playbackEnabled = true)
+    val expCurrentState = RadioService.CurrentSourceState(None, None, playbackEnabled = true)
 
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>

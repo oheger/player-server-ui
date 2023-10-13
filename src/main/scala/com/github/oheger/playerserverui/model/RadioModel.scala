@@ -54,6 +54,16 @@ object RadioModel:
   final case class RadioSources(sources: List[RadioSource])
 
   /**
+   * A data class representing the status of the radio source. It contains the
+   * IDs of the currently selected source and a replacement source if defined.
+   *
+   * @param currentSourceId     the optional ID of the selected radio source
+   * @param replacementSourceId the optional ID of the replacement source
+   */
+  final case class RadioSourceStatus(currentSourceId: Option[String],
+                                     replacementSourceId: Option[String])
+
+  /**
    * A data class defining messages sent from the server via a web socket
    * connection to represent radio events.
    *
@@ -86,6 +96,7 @@ object RadioModel:
   implicit val playbackStatusDecoder: JsonDecoder[PlaybackStatus] = DeriveJsonDecoder.gen[PlaybackStatus]
   implicit val radioSourceDecoder: JsonDecoder[RadioSource] = DeriveJsonDecoder.gen[RadioSource]
   implicit val radioSourcesDecoder: JsonDecoder[RadioSources] = DeriveJsonDecoder.gen[RadioSources]
+  implicit val radioSourceStatusDecoder: JsonDecoder[RadioSourceStatus] = DeriveJsonDecoder.gen[RadioSourceStatus]
   implicit val radioMessageDecoder: JsonDecoder[RadioMessage] = DeriveJsonDecoder.gen[RadioMessage]
 
   /**

@@ -48,6 +48,7 @@ object DummyUIModel extends UIModel:
    */
   final val CurrentSource = RadioService.CurrentSourceState(
     Some(DummyRadioSources.sources(4).id),
+    None,
     playbackEnabled = true
   )
 
@@ -59,7 +60,7 @@ object DummyUIModel extends UIModel:
     titleInfo = ""
   )
 
-/** A static data object with the dummy radio sources data. */
+  /** A static data object with the dummy radio sources data. */
   private val sourcesVal = Val(Some(Success(DummyRadioSources.sources)))
 
   /** A static data object with the current radio playback state. */

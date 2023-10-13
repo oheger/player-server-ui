@@ -32,12 +32,14 @@ object RadioService:
   /**
    * A data class to represent the playback state for the current radio source.
    * This class collects the data from multiple calls of the player server REST
-   * API: the currently played source, and the playback state.
+   * API: the current source status, and the playback state.
    *
-   * @param optCurrentSourceID the ID of the current radio source - if set
-   * @param playbackEnabled  flag whether playback is currently active
+   * @param optCurrentSourceID     the ID of the current radio source - if set
+   * @param optReplacementSourceID the ID of the replacement source - if set
+   * @param playbackEnabled        flag whether playback is currently active
    */
   final case class CurrentSourceState(optCurrentSourceID: Option[String],
+                                      optReplacementSourceID: Option[String],
                                       playbackEnabled: Boolean)
 
   /**
@@ -89,12 +91,12 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
    * @return a ''Future'' with information about the current source
    */
   def loadCurrentSource(): Future[CurrentSourceState] = mapException {
-    val futCurrentSource = basicRequest.get(serverUri("/sources/current"))
+    val futCurrentSource = basicRequest.get(serverUri("/sources/current?full=true"))
       .response(asString.getRight)
       .send(backend).map { response =>
         response.code match
           case StatusCode.NoContent => None
-          case _ => response.body.fromJson[RadioModel.RadioSource] match
+          case _ => response.body.fromJson[RadioModel.RadioSourceStatus] match
             case Left(value) => throw new IllegalStateException("JSON decoding failed: " + value)
             case Right(value) => Some(value)
       }
@@ -105,7 +107,9 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
     for
       currentSource <- futCurrentSource
       playbackState <- futPlaybackState
-    yield CurrentSourceState(currentSource map (_.id), playbackState.enabled)
+    yield CurrentSourceState(currentSource flatMap (_.currentSourceId),
+      currentSource flatMap (_.replacementSourceId),
+      playbackState.enabled)
   }
 
   /**
