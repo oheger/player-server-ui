@@ -204,8 +204,7 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
         |  "enabled": false
         |}
         |""".stripMargin
-    val expCurrentSource = RadioModel.RadioSource("id1", "currentSource", 10)
-    val expCurrentState = RadioService.CurrentSourceState(Some(expCurrentSource), playbackEnabled = false)
+    val expCurrentState = RadioService.CurrentSourceState(Some("id1"), playbackEnabled = false)
 
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>

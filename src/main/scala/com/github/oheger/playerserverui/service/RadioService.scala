@@ -34,10 +34,10 @@ object RadioService:
    * This class collects the data from multiple calls of the player server REST
    * API: the currently played source, and the playback state.
    *
-   * @param optCurrentSource the current radio source - if set
+   * @param optCurrentSourceID the ID of the current radio source - if set
    * @param playbackEnabled  flag whether playback is currently active
    */
-  final case class CurrentSourceState(optCurrentSource: Option[RadioModel.RadioSource],
+  final case class CurrentSourceState(optCurrentSourceID: Option[String],
                                       playbackEnabled: Boolean)
 
   /**
@@ -105,7 +105,7 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
     for
       currentSource <- futCurrentSource
       playbackState <- futPlaybackState
-    yield CurrentSourceState(currentSource, playbackState.enabled)
+    yield CurrentSourceState(currentSource map (_.id), playbackState.enabled)
   }
 
   /**

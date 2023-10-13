@@ -47,13 +47,13 @@ object DummyUIModel extends UIModel:
    * the radio service.
    */
   final val CurrentSource = RadioService.CurrentSourceState(
-    Some(DummyRadioSources.sources(4)),
+    Some(DummyRadioSources.sources(4).id),
     playbackEnabled = true
   )
 
   /** An object defining test data for the radio playback state. */
   final val TestRadioPlaybackState = UIModel.RadioPlaybackState(
-    currentSource = CurrentSource.optCurrentSource,
+    currentSource = Some(DummyRadioSources.sources(4)),
     replacementSource = None,
     playbackEnabled = CurrentSource.playbackEnabled,
     titleInfo = ""
