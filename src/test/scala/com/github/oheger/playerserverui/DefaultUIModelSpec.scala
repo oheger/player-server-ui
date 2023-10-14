@@ -358,7 +358,7 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
         model.initRadioPlaybackState()
         val expectedInitState = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(updatedCurrentSource))
         assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedInitState))) flatMap { _ =>
-          val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, "?")
+          val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceSelected.toString, "?")
           val expectedState =
             DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(RadioModel.UnknownRadioSource))
           service.sendRadioMessage(radioMessage)
@@ -376,10 +376,10 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
   }
 
-  it should "handle a SourceChanged radio message" in {
+  it should "handle a SourceSelected radio message" in {
     radioEventListenerTest { (model, service) =>
       val newSource = DummyUIModel.DummyRadioSources.sources(1)
-      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, newSource.id)
+      val radioMessage = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceSelected.toString, newSource.id)
       val expectedState = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(newSource))
 
       service.sendRadioMessage(radioMessage)
@@ -416,6 +416,26 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
   }
 
+  it should "reset the replacement source on receiving a SourceSelected message" in {
+    radioEventListenerTest { (model, service) =>
+      val replacementSource = DummyUIModel.DummyRadioSources.sources(2)
+      val radioMessage1 = RadioModel.RadioMessage(RadioModel.RadioMessageType.ReplacementStart.toString,
+        replacementSource.id)
+      val expectedState1 = DummyUIModel.TestRadioPlaybackState.copy(replacementSource = Some(replacementSource))
+
+      service.sendRadioMessage(radioMessage1)
+      assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState1))) flatMap { _ =>
+        val newSource = DummyUIModel.DummyRadioSources.sources(1)
+        val radioMessage2 = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceSelected.toString, newSource.id)
+        val expectedState2 = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(newSource))
+
+        service.sendRadioMessage(radioMessage2)
+
+        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState2)))
+      }
+    }
+  }
+
   it should "handle a TitleInfo radio message" in {
     val CurrentTitleInfo = "Dire Straits / Brothers in Arms"
     radioEventListenerTest { (model, service) =>
@@ -446,13 +466,11 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
       service.sendRadioMessage(radioMessage1)
 
       assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState1))) flatMap { _ =>
-        val newSource = DummyUIModel.DummyRadioSources.sources(1)
-        val radioMessage2 = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, newSource.id)
-        val expectedState2 = DummyUIModel.TestRadioPlaybackState.copy(currentSource = Some(newSource))
+        val radioMessage2 = RadioModel.RadioMessage(RadioModel.RadioMessageType.SourceChanged.toString, "ignored")
 
         service.sendRadioMessage(radioMessage2)
 
-        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedState2)))
+        assertSignalValue(model.radioPlaybackStateSignal, Some(Success(DummyUIModel.TestRadioPlaybackState)))
       }
     }
   }

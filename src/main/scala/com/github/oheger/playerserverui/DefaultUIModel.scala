@@ -182,8 +182,10 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    */
   private def handleRadioMessage(message: RadioModel.RadioMessage): Unit =
     message.radioMessageTypeOption foreach {
-      case RadioModel.RadioMessageType.SourceChanged =>
+      case RadioModel.RadioMessageType.SourceSelected =>
         radioCurrentSourceIDVar set Some(message.payload)
+        radioReplacementSourceIDVar set None
+      case RadioModel.RadioMessageType.SourceChanged =>
         radioPlaybackEnabledVar set true
       case RadioModel.RadioMessageType.ReplacementStart =>
         radioReplacementSourceIDVar set Some(message.payload)
