@@ -77,7 +77,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
       DummyUIModel.DummyRadioSources.sources foreach { source =>
         $(element.ref).find(s"td:contains('${source.name}')").length should be(1)
       }
-      $(element.ref).find("img[src='/loading.gif']").length should be(0)
+      $(element.ref).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
@@ -180,7 +180,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(new UIModelTestImpl)
 
     testDom(element) {
-      $(element.ref).find("img[src='/loading.gif']").length should be(1)
+      $(element.ref).find("div[class='loading-indicator']").length should be(1)
     }
   }
 
@@ -207,7 +207,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
       nodes.length should be(1)
       $(element.ref).find("img[src='/playback-stop.svg']").length should be(1)
       $(element.ref).find("img[src='/playback-start.svg']").length should be(1)
-      $(element.ref).find("img[src='/loading.gif']").length should be(0)
+      $(element.ref).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
@@ -233,7 +233,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find(s"p.error:contains('$message')").length should be(1)
       $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
       $(element.ref).find("img[src='/playback-start.png']").length should be(0)
-      $(element.ref).find("img[src='/loading.gif']").length should be(0)
+      $(element.ref).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
@@ -241,7 +241,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(new UIModelTestImpl)
 
     testDom(element) {
-      $(element.ref).find("img[src='/loading.gif']").length should be(1)
+      $(element.ref).find("div[class='loading-indicator']").length should be(1)
     }
   }
 

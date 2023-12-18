@@ -232,13 +232,22 @@ object Main:
     div(
       children <-- signal.flatMap {
         case None =>
-          Signal.fromValue(List(img(src := "/loading.gif", alt := "Loading")))
+          Signal.fromValue(List(loadingIndicator()))
         case Some(Failure(exception)) =>
           Signal.fromValue(List(p(className := "error", exception.getMessage)))
         case Some(Success(value)) =>
           data(Signal.fromValue(value))
       }
     )
+
+  /**
+   * Returns an [[Element]] to represent a loading indicator. This is used as
+   * long as no real data is available yet for an element.
+   *
+   * @return the loading indicator element
+   */
+  private def loadingIndicator(): Element =
+    div(className := "loading-indicator")
 
   /**
    * Creates the UI model for this application. Per default, a model
