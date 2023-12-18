@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: #0D1B2A;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -31,7 +31,7 @@ body {
 
 .error {
   font-weight: bold;
-  color: Crimson
+  color: #A22522;
 }
 
 #currentSource {
@@ -47,7 +47,7 @@ body {
 
 .selectedSource {
   font-size: x-large;
-  color: #729FCF;
+  color: #197BBD;
 }
 
 .replacementSource {
