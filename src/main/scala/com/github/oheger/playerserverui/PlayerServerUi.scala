@@ -38,6 +38,7 @@ object Main:
 
   def appElement(): Element =
     div(
+      className := "container",
       radioPlaybackStateElement(),
       radioSourcesElement()
     )
@@ -63,7 +64,7 @@ object Main:
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal, "select-source") { sourcesSignal =>
       val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
 
-      val sourcesElement = div(idAttr := "radioSources",
+      val sourcesElement = div(
         table(idAttr := "radioSourcesTable",
           tbody(
             children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>

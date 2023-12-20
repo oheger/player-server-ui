@@ -2,8 +2,8 @@
 
 :root {
   font-family: 'Open Sans', sans-serif;
-  line-height: 1.1;
   font-weight: 400;
+  font-size: 62.5%;
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
@@ -18,17 +18,20 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
 }
 
 #app {
   max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+}
+
+.container {
+  display: grid;
+  grid-template-columns: minmax(6rem, 1fr) repeat(6, 1fr) minmax(6rem, 1fr);
+  grid-template-rows: repeat(2, min-content);
+  grid-row-gap: 1.6rem;
+  margin-top: 1.6rem;
 }
 
 .error {
@@ -53,8 +56,13 @@ body {
    }
 }
 
-
 /* Current playback status. */
+
+.playback-state {
+  grid-column: 2 / 8;
+  grid-row: 1 / 2;
+  text-align: center;
+}
 
 #currentSource {
   width: 100%;
@@ -91,9 +99,11 @@ body {
 
 /* List of radio sources. */
 
-#radioSources {
+.select-source {
   width: 100%;
   padding-top: 2em;
+  grid-column: 2 / 8;
+  grid-row: 2 / 3;
 }
 
 #radioSourcesTable {

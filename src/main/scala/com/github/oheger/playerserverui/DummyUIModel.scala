@@ -59,12 +59,18 @@ object DummyUIModel extends UIModel:
     playbackEnabled = CurrentSource.playbackEnabled,
     titleInfo = ""
   )
+  
+  /** Another object with test data that defines all properties. */
+  final val TestRadioPlaybackStateEnhanced = TestRadioPlaybackState.copy(
+    replacementSource = Some(DummyRadioSources.sources.head),
+    titleInfo = "Dire Straits - Brothers in Arms"
+  )
 
   /** A static data object with the dummy radio sources data. */
   private val sourcesVal = Val(Some(Success(DummyRadioSources.sources)))
 
   /** A static data object with the current radio playback state. */
-  private val radioPlaybackStateVal = Val(Some(Success(TestRadioPlaybackState)))
+  private val radioPlaybackStateVal = Val(Some(Success(TestRadioPlaybackStateEnhanced)))
 
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = sourcesVal.signal
 
