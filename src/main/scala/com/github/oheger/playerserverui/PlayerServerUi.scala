@@ -60,7 +60,7 @@ object Main:
    * @return the element to display the radio sources
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal) { sourcesSignal =>
+    elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal, "select-source") { sourcesSignal =>
       val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
 
       val sourcesElement = div(idAttr := "radioSources",
@@ -84,7 +84,7 @@ object Main:
    * @return the element to display the current radio playback state
    */
   private[playerserverui] def radioPlaybackStateElement(model: UIModel = uiModel): Element =
-    elementWithErrorAndLoadingIndicator(model.radioPlaybackStateSignal) { playbackStateSignal =>
+    elementWithErrorAndLoadingIndicator(model.radioPlaybackStateSignal, "playback-state") { playbackStateSignal =>
       playbackStateSignal.map { currentRadioState =>
 
         def iconClass(stop: Boolean): String =
@@ -223,13 +223,15 @@ object Main:
    * calls the given function to generate the UI for the normal state.
    *
    * @param signal the [[Signal]] to display
+   * @param styleClass the CSS class for the new element
    * @param data   a function for handling the normal state
    * @tparam A the data type of the signal
    * @return an [[Element]] to display this signal
    */
-  private def elementWithErrorAndLoadingIndicator[A](signal: Signal[Option[Try[A]]])
+  private def elementWithErrorAndLoadingIndicator[A](signal: Signal[Option[Try[A]]], styleClass: String)
                                                     (data: Signal[A] => Signal[List[Element]]): Element =
     div(
+      className := styleClass,
       children <-- signal.flatMap {
         case None =>
           Signal.fromValue(List(loadingIndicator()))
