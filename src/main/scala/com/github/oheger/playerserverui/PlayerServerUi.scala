@@ -94,59 +94,38 @@ object Main:
 
         currentRadioState.currentSource.fold(List.empty) { source =>
           val btnStartPlayback =
-            button(
-              idAttr := "btnStartRadioPlayback",
-              onClick --> { _ => model.startRadioPlayback() },
-              disabled := currentRadioState.playbackEnabled,
-              img(
-                src := "/playback-start.svg",
-                alt := "Start playback",
-                className := iconClass(stop = false)
-              )
-            )
-
+            radioControlButton("/playback-start.svg", "ctrl-btn-start",
+              currentRadioState.playbackEnabled)(model.startRadioPlayback)
           val btnStopPlayback =
-            button(
-              idAttr := "btnStopRadioPlayback",
-              onClick --> { _ => model.stopRadioPlayback() },
-              disabled := !currentRadioState.playbackEnabled,
-              img(
-                src := "/playback-stop.svg",
-                alt := "Stop playback",
-                className := iconClass(stop = true)
-              )
-            )
-
+            radioControlButton("/playback-stop.svg", "ctrl-btn-stop",
+              !currentRadioState.playbackEnabled)(model.stopRadioPlayback)
           val btnShutdown =
-            button(
-              idAttr := "btnShutdown",
-              onClick --> { _ => model.shutdown() },
-              img(
-                src := "/shutdown.svg",
-                className := "btnIcon",
-                alt := "Shutdown"
-              )
-            )
+            radioControlButton("/shutdown.svg", "ctrl-btn-shutdown", inactive = false)(model.shutdown)
 
-          val divCurrentSource = div(
-            idAttr := "currentSource",
-            elementWithLabel("Selected source:", Some(source.name), "selectedSource"),
-            elementWithLabel(
-              "Replacement source:",
-              currentRadioState.replacementSource.map(_.name),
-              "replacementSource"
-            ),
-            elementWithLabel(
-              "Title info:",
-              Some(currentRadioState.titleInfo).filterNot(_.isEmpty),
-              "titleInfo"
-            ),
+          val selectedSourceStyles = List("current-source")
+          val selectedSourceReplacedStyles =
+            if currentRadioState.replacementSource.isDefined then "current-source-replaced" :: selectedSourceStyles
+            else selectedSourceStyles
+          val divSelectedSource = radioSourceElement(Some(source), selectedSourceReplacedStyles)
+          val divReplacementSource = radioSourceElement(currentRadioState.replacementSource,
+            List("replacement-source"))
+          val divTitle = div(
+            className := "title-info",
+            currentRadioState.titleInfo
+          )
+          val divDisplay = div(
+            className := "radio-display",
+            divSelectedSource,
+            divReplacementSource,
+            divTitle
+          )
+
+          List(
+            divDisplay,
             btnStartPlayback,
             btnStopPlayback,
             btnShutdown
           )
-
-          List(divCurrentSource)
         }
       }
     }
@@ -196,26 +175,38 @@ object Main:
     )
 
   /**
-   * Generates a composed element consisting of a smaller label and text
-   * content with a specific style class. If the content is undefined, an
-   * empty element is returned.
+   * Generates an element to display a radio source.
    *
-   * @param label   the text of the label
-   * @param content the optional element content
-   * @param style   the style class of the content
-   * @return the generated element
+   * @param source the source to be displayed
+   * @param styles additional style classes to add
+   * @return the element representing the radio source
    */
-  private def elementWithLabel(label: String, content: Option[String], style: String): Element =
-    content.fold(div()) { text =>
-      div(
-        p(className := "label",
-          label
-        ),
-        p(className := style,
-          text
-        )
+  private def radioSourceElement(source: Option[RadioModel.RadioSource], styles: List[String]): Element =
+    div(
+      className := ("radio-source" :: styles).mkString(" "),
+      source.map(_.name) getOrElse ""
+    )
+
+  /**
+   * Generates a button with an image that can be used to control the radio
+   * player.
+   *
+   * @param image    the name of the image
+   * @param style    an additional style class
+   * @param handler  the handler function to handle button clicks
+   * @param inactive flag whether the button is disabled
+   * @return the button element
+   */
+  private def radioControlButton(image: String, style: String, inactive: Boolean)(handler: () => Unit): Element =
+    button(
+      className := s"ctrl-btn $style",
+      onClick --> { _ => handler() },
+      disabled := inactive,
+      img(
+        className := "ctrl-img",
+        src := image
       )
-    }
+    )
 
   /**
    * Creates an [[Element]] for a [[Signal]] that shows a loading or an error
@@ -223,9 +214,9 @@ object Main:
    * a special state, it produces corresponding UI elements. Otherwise, it
    * calls the given function to generate the UI for the normal state.
    *
-   * @param signal the [[Signal]] to display
+   * @param signal     the [[Signal]] to display
    * @param styleClass the CSS class for the new element
-   * @param data   a function for handling the normal state
+   * @param data       a function for handling the normal state
    * @tparam A the data type of the signal
    * @return an [[Element]] to display this signal
    */
