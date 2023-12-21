@@ -203,7 +203,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
 
     testDom(element) {
       val nodes = $(element.ref)
-        .find(s"p:contains('${DummyUIModel.TestRadioPlaybackState.currentSource.get.name}')")
+        .find(s"div.current-source:contains('${DummyUIModel.TestRadioPlaybackState.currentSource.get.name}')")
       nodes.length should be(1)
       $(element.ref).find("img[src='/playback-stop.svg']").length should be(1)
       $(element.ref).find("img[src='/playback-start.svg']").length should be(1)
@@ -251,13 +251,11 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
-      $(element.ref).find("#btnStartRadioPlayback:enabled").trigger("click")
+      $(element.ref).find("button.ctrl-btn-start:enabled").trigger("click")
 
       model.startRadioPlaybackCount should be(1)
 
-      $(element.ref).find("#btnStopRadioPlayback:disabled").length should be(1)
-      $(element.ref).find("img.btnIconDisabled[src='/playback-start.svg']").length should be(0)
-      $(element.ref).find("img.btnIconDisabled[src='/playback-stop.svg']").length should be(1)
+      $(element.ref).find("button.ctrl-btn-stop:disabled").length should be(1)
     }
   }
 
@@ -267,13 +265,11 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
-      $(element.ref).find("#btnStopRadioPlayback:enabled").trigger("click")
+      $(element.ref).find("button.ctrl-btn-stop:enabled").trigger("click")
 
       model.stopRadioPlaybackCount should be(1)
 
-      $(element.ref).find("#btnStartRadioPlayback:disabled").length should be(1)
-      $(element.ref).find("img.btnIconDisabled[src='/playback-stop.svg']").length should be(0)
-      $(element.ref).find("img.btnIconDisabled[src='/playback-start.svg']").length should be(1)
+      $(element.ref).find("button.ctrl-btn-start:disabled").length should be(1)
     }
   }
 
@@ -283,7 +279,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
-      $(element.ref).find("#btnShutdown").trigger("click")
+      $(element.ref).find("button.ctrl-btn-shutdown").trigger("click")
 
       model.shutdownCount should be(1)
     }
@@ -297,7 +293,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
-      $(element.ref).find(s"p:contains('$TitleInfo')").length should be(1)
+      $(element.ref).find(s"div.title-info:contains('$TitleInfo')").length should be(1)
     }
   }
 
@@ -309,7 +305,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioPlaybackStateElement(model)
 
     testDom(element) {
-      $(element.ref).find(s"p:contains('${replacementSource.name}')").length should be(1)
+      $(element.ref).find(s"div.replacement-source:contains('${replacementSource.name}')").length should be(1)
     }
   }
 end MainSpec
