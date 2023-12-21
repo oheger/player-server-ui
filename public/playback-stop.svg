@@ -58,15 +58,15 @@
       <g class="com.sun.star.drawing.CustomShape">
        <g id="id3">
         <rect class="BoundingBox" stroke="none" fill="none" x="200" y="197" width="798" height="2140"/>
-        <path fill="rgb(114,159,207)" stroke="none" d="M 599,2335 L 201,2335 201,198 996,198 996,2335 599,2335 Z"/>
-        <path fill="none" stroke="rgb(52,101,164)" d="M 599,2335 L 201,2335 201,198 996,198 996,2335 599,2335 Z"/>
+        <path fill="rgb(162,171,171)" stroke="none" d="M 599,2335 L 201,2335 201,198 996,198 996,2335 599,2335 Z"/>
+        <path fill="none" stroke="rgb(25,123,189)" d="M 599,2335 L 201,2335 201,198 996,198 996,2335 599,2335 Z"/>
        </g>
       </g>
       <g class="com.sun.star.drawing.CustomShape">
        <g id="id4">
         <rect class="BoundingBox" stroke="none" fill="none" x="1548" y="197" width="798" height="2140"/>
-        <path fill="rgb(114,159,207)" stroke="none" d="M 1947,2335 L 1549,2335 1549,198 2344,198 2344,2335 1947,2335 Z"/>
-        <path fill="none" stroke="rgb(52,101,164)" d="M 1947,2335 L 1549,2335 1549,198 2344,198 2344,2335 1947,2335 Z"/>
+        <path fill="rgb(162,171,171)" stroke="none" d="M 1947,2335 L 1549,2335 1549,198 2344,198 2344,2335 1947,2335 Z"/>
+        <path fill="none" stroke="rgb(25,123,189)" d="M 1947,2335 L 1549,2335 1549,198 2344,198 2344,2335 1947,2335 Z"/>
        </g>
       </g>
      </g>
