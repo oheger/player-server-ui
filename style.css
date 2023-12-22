@@ -6,7 +6,6 @@
   font-size: 62.5%;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
   background-color: #0D1B2A;
 
   font-synthesis: none;
@@ -28,7 +27,7 @@ body {
 
 .container {
   display: grid;
-  grid-template-columns: minmax(6rem, 1fr) repeat(6, 1fr) minmax(6rem, 1fr);
+  grid-template-columns: 6rem repeat(6, 1fr) 6rem;
   grid-template-rows: repeat(2, min-content);
   grid-row-gap: 1.6rem;
   margin-top: 1.6rem;
@@ -199,15 +198,62 @@ body {
   margin-bottom: 1.1em;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
+/* Making project responsive. */
+
+@media(max-width: 1100px) {
+  .container {
+    grid-template-columns: 3rem repeat(6, 1fr) 3rem;
   }
-  a:hover {
-    color: #747bff;
+
+  .radio-source {
+    font-size: 3rem;
   }
-  button {
-    background-color: #f9f9f9;
+
+  .title-info {
+    font-size: 4rem;
+  }
+}
+
+@media(max-width: 800px) {
+  .container {
+    grid-template-columns: 1.5rem repeat(6, 1fr) 1.5rem;
+  }
+
+  .radio-source {
+    font-size: 2rem;
+  }
+
+  .title-info {
+    font-size: 3rem;
+  }
+
+  .ctrl-btn {
+    border-radius: 1.5rem;
+  }
+
+  .ctrl-img {
+    width: 40px;
+  }
+}
+
+@media(max-width: 650px) {
+  .container {
+    grid-template-columns: 0.5rem repeat(6, 1fr) 0.5rem;
+  }
+
+  .radio-source {
+    font-size: 1.5rem;
+  }
+
+  .title-info {
+    font-size: 2rem;
+  }
+
+  .ctrl-btn {
+    border-radius: 1rem;
+  }
+
+  .ctrl-img {
+    width: 32px;
   }
 }
