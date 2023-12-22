@@ -212,7 +212,10 @@ object Main:
    * Creates an [[Element]] for a [[Signal]] that shows a loading or an error
    * indicator if needed. This function evaluates the given signal. If it is in
    * a special state, it produces corresponding UI elements. Otherwise, it
-   * calls the given function to generate the UI for the normal state.
+   * calls the given function to generate the UI for the normal state. In case
+   * of an error state, an element is generated with the CSS class ''error''
+   * plus another one starting with the given ''styleClass'' and the suffix
+   * ''-error''.
    *
    * @param signal     the [[Signal]] to display
    * @param styleClass the CSS class for the new element
@@ -228,7 +231,7 @@ object Main:
         case None =>
           Signal.fromValue(List(loadingIndicator()))
         case Some(Failure(exception)) =>
-          Signal.fromValue(List(p(className := "error", exception.getMessage)))
+          Signal.fromValue(List(p(className := s"error $styleClass-error", exception.getMessage)))
         case Some(Success(value)) =>
           data(Signal.fromValue(value))
       }
