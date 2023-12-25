@@ -475,6 +475,17 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     }
   }
 
+  "favoritesSignal" should "return an ordered list with favorite sources" in {
+    val expectedFavorites = List(
+      RadioModel.RadioSource("s1", "SWR1", 8, favoriteIndex = Some(1), favoriteName = Some("SWR1")),
+      RadioModel.RadioSource("s6", "AFN", 2, favoriteIndex = Some(2), favoriteName = None),
+      RadioModel.RadioSource("s5", "ACTIVE", 5, favoriteIndex = Some(3), favoriteName = Some("ACTIVE"))
+    )
+    val model = createInitializedModel()
+
+    assertSignalValue(model.favoritesSignal, Some(Success(expectedFavorites)))
+  }
+
   /**
    * A test implementation of [[RadioService]] that provides some default
    * implementations for functions that are frequently used in tests.

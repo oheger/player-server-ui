@@ -37,13 +37,18 @@ object RadioModel:
   /**
    * A data class representing a radio source.
    *
-   * @param id      an internal ID assigned to the radio source
-   * @param name    the name of the radio source
-   * @param ranking a ranking
+   * @param id            an internal ID assigned to the radio source
+   * @param name          the name of the radio source
+   * @param ranking       a ranking
+   * @param favoriteIndex an index >= 0 if this source is a favorite; 
+   *                      otherwise, the value is less than 0
+   * @param favoriteName  the name to use for this source if it is a favorite
    */
   final case class RadioSource(id: String,
                                name: String,
-                               ranking: Int)
+                               ranking: Int,
+                               favoriteIndex: Option[Int] = None,
+                               favoriteName: Option[String] = None)
 
   /**
    * A data class representing the list of [[RadioSource]] objects currently
