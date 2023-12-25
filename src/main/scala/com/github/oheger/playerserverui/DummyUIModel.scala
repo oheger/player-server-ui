@@ -31,12 +31,12 @@ object DummyUIModel extends UIModel:
   /** A static object with radio sources. */
   final val DummyRadioSources: RadioModel.RadioSources = RadioModel.RadioSources(
     List(
-      RadioModel.RadioSource("s1", "SWR 1 BW", 8),
+      RadioModel.RadioSource("s1", "SWR 1 BW", 8, favoriteIndex = Some(1), favoriteName = Some("SWR1")),
       RadioModel.RadioSource("s2", "Rock Antenne", 9),
-      RadioModel.RadioSource("s3", "Energy", 1),
+      RadioModel.RadioSource("s3", "Energy", 1, favoriteIndex = Some(-1), favoriteName = Some("foo")),
       RadioModel.RadioSource("s4", "Harmony FM", 4),
-      RadioModel.RadioSource("s5", "Radio Active", 5),
-      RadioModel.RadioSource("s6", "AFN", 2),
+      RadioModel.RadioSource("s5", "Radio Active", 5, favoriteIndex = Some(3), favoriteName = Some("ACTIVE")),
+      RadioModel.RadioSource("s6", "AFN", 2, favoriteIndex = Some(2)),
       RadioModel.RadioSource("s7", "FOO", 0),
       RadioModel.RadioSource("s8", "bar", 0),
     )

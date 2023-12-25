@@ -113,6 +113,20 @@ trait UIModel:
   def radioPlaybackStateSignal: Signal[Option[Try[RadioPlaybackState]]]
 
   /**
+   * Returns a signal with a sorted list of the favorite radio sources. The
+   * sources in the resulting list are already ordered correctly and have been
+   * assigned the favorite name.
+   *
+   * @return the signal with the list of favorite sources
+   */
+  def favoritesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
+    mapOptionalErrorSignal(radioSourcesSignal) { sources =>
+      sources.filter(_.favoriteIndex.exists(_ >= 0))
+        .sortBy(_.favoriteIndex.get)
+        .map { source => source.favoriteName.fold(source) { name => source.copy(name = name) } }
+    }
+
+  /**
    * Loads the current list of radio sources from the server. This function
    * should be invoked on application startup.
    */
