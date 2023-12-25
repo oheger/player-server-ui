@@ -40,6 +40,7 @@ object Main:
     div(
       className := "container",
       radioPlaybackStateElement(),
+      favoritesElement(),
       radioSourcesElement()
     )
   end appElement
@@ -53,6 +54,25 @@ object Main:
   private[playerserverui] def refreshUi(model: UIModel = uiModel): Unit =
     model.initRadioSources()
     model.initRadioPlaybackState()
+
+  /**
+   * Returns an element that displays buttons to switch to favorite radio 
+   * sources.
+   *
+   * @param model the UI model
+   * @return the element to display favorite radio sources
+   */
+  private[playerserverui] def favoritesElement(model: UIModel = uiModel): Element =
+    elementWithErrorAndLoadingIndicator(model.favoritesSignal, "favorites-wrapper") { favoritesSignal =>
+      val favoritesElement = div(
+        className := "favorites",
+        children <-- favoritesSignal.split(_.id) { (id, _, sourceSignal) =>
+          renderFavoriteSource(model, id, sourceSignal)
+        }
+      )
+
+      Signal.fromValue(List(favoritesElement))
+    }
 
   /**
    * Returns an element that displays the currently available radio sources.
@@ -172,6 +192,23 @@ object Main:
           child.text <-- rankingTextSignal
         )
       )
+    )
+
+  /**
+   * Generates an element to display a favorite radio source.
+   *
+   * @param model        the UI model
+   * @param sourceID     the ID of the favorite radio source
+   * @param sourceSignal the signal for the source to be displayed
+   * @return the element representing this favorite source
+   */
+  private def renderFavoriteSource(model: UIModel,
+                                   sourceID: String,
+                                   sourceSignal: Signal[RadioModel.RadioSource]): Element =
+    button(
+      className := "favorite-btn",
+      onClick --> { _ => model.changeRadioSource(sourceID) },
+      child.text <-- sourceSignal.map(_.name)
     )
 
   /**

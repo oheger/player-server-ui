@@ -308,6 +308,55 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(element.ref).find(s"div.replacement-source:contains('${replacementSource.name}')").length should be(1)
     }
   }
+
+  "favoritesElement" should "display buttons for all favorite radio sources" in {
+    val favorites = List(
+      RadioModel.RadioSource("f1", "Fav1", 1),
+      RadioModel.RadioSource("f2", "Fav2", 1),
+      RadioModel.RadioSource("f3", "Favorite3", 1)
+    )
+    val model = new UIModelTestImpl
+    model setTriedFavoriteSources Success(favorites)
+    val element = Main.favoritesElement(model)
+
+    testDom(element) {
+      favorites.zipWithIndex foreach { (source, index) =>
+        $(element.ref).find(s".favorite-btn").eq(index).text() should be(source.name)
+      }
+    }
+  }
+
+  it should "show an error message if the favorites could not be loaded" in {
+    val message = "Failure while loading radio sources"
+    val model = new UIModelTestImpl
+    model setTriedFavoriteSources Failure(new IllegalStateException(message))
+    val element = Main.favoritesElement(model)
+
+    testDom(element) {
+      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
+      $(element.ref).find(".favorite-btn").length should be(0)
+    }
+  }
+
+  it should "show a progress indicator while loading data" in {
+    val element = Main.favoritesElement(new UIModelTestImpl)
+
+    testDom(element) {
+      $(element.ref).find("div[class='loading-indicator']").length should be(1)
+    }
+  }
+
+  it should "switch to another source when clicking a favorite button" in {
+    val model = new UIModelTestImpl
+    model setTriedFavoriteSources Success(DummyUIModel.DummyRadioSources.sources.take(2))
+    val element = Main.favoritesElement(model)
+
+    testDom(element) {
+      $(element.ref).find("button").eq(1).trigger("click")
+
+      model.newRadioSource should be("s2")
+    }
+  }
 end MainSpec
 
 /**
@@ -317,6 +366,9 @@ end MainSpec
 private class UIModelTestImpl extends UIModel:
   /** Stores the current state of radio sources. */
   private val radioSources: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
+
+  /** Stores the list of favorite radio sources. */
+  private val favoriteSources: Var[Option[Try[List[RadioModel.RadioSource]]]] = Var(None)
 
   /** Stores the radio playback source. */
   private val radioPlaybackState: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
@@ -357,6 +409,14 @@ private class UIModelTestImpl extends UIModel:
     setTriedRadioSources(Success(sources))
 
   /**
+   * Sets the value for the favorite sources of this model.
+   *
+   * @param triedFavorites the ''Try'' with the favorite sources
+   */
+  def setTriedFavoriteSources(triedFavorites: Try[List[RadioModel.RadioSource]]): Unit =
+    favoriteSources set Some(triedFavorites)
+
+  /**
    * Sets the data about the current radio playback state to the given object.
    *
    * @param triedState the ''Try'' with data about the radio playback source
@@ -365,6 +425,8 @@ private class UIModelTestImpl extends UIModel:
     radioPlaybackState set Some(triedState)
 
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
+
+  override def favoritesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = favoriteSources.signal
 
   override def radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = radioPlaybackState.signal
 
