@@ -33,12 +33,19 @@ def PlayerServerUi(): Unit =
 end PlayerServerUi
 
 object Main:
+  /**
+   * The name of the checkbox element that controls the display of the dialog
+   * to select another radio source.
+   */
+  final val CheckBoxRadioSourceSelection = "showRadioSourceSelection"
+
   /** The UI model. */
   private val uiModel = createUiModel()
 
   def appElement(): Element =
     div(
       className := "container",
+      radioSourceSelectionCheckboxElement(),
       radioPlaybackStateElement(),
       favoritesElement(),
       radioSourcesElement()
@@ -73,6 +80,22 @@ object Main:
 
       Signal.fromValue(List(favoritesElement))
     }
+
+  /**
+   * Returns a checkbox element that controls the display of the modal dialog
+   * with all available radio sources. The checkbox is evaluated by CSS styles
+   * which connect the modal dialog to the value of this control.
+   *
+   * @param model the UI model
+   * @return the checkbox element to enable the radio source selection
+   */
+  private[playerserverui] def radioSourceSelectionCheckboxElement(model: UIModel = uiModel): Element =
+    input(
+      idAttr := CheckBoxRadioSourceSelection,
+      `type` := "checkbox",
+      checked <-- model.showRadioSourceSelectionSignal,
+      hidden := true
+    )
 
   /**
    * Returns an element that displays the currently available radio sources.
