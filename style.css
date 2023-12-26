@@ -28,8 +28,8 @@ body {
 .container {
   display: grid;
   grid-template-columns: 6rem repeat(6, 1fr) 6rem;
-  grid-template-rows: repeat(2, min-content);
-  grid-row-gap: 1.6rem;
+  grid-template-rows: repeat(3, min-content);
+  grid-row-gap: 5rem;
   margin-top: 1.6rem;
 }
 
@@ -149,13 +149,45 @@ body {
   grid-row: 3 / 4;
 }
 
+/* Favorite radio sources. */
+
+.favorites-wrapper {
+  grid-column: 2 / 8;
+  grid-row: 2 / 3;
+}
+
+.favorites-wrapper-error {
+  grid-column: 1 / -1;
+  grid-row: 2 / 3;
+}
+
+.favorites {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min-content, 32rem));
+  grid-column-gap: 3rem;
+  grid-row-gap: 3rem;
+  justify-content: center;
+}
+
+.favorite-btn {
+  cursor: pointer;
+  font-size: 4rem;
+  color: #A2ABAB;
+  background-image: linear-gradient(to top, #586994, #197BBD);
+  padding: 0.5rem 0;
+  outline: none;
+  border-radius: 2rem;
+  border: none;
+  box-shadow: .2rem .2rem 1rem #0D160B;
+}
+
 /* List of radio sources. */
 
 .select-source {
   width: 100%;
   padding-top: 2em;
   grid-column: 2 / 8;
-  grid-row: 2 / 3;
+  grid-row: 3 / 4;
 }
 
 #radioSourcesTable {
@@ -219,6 +251,17 @@ body {
   .title-info {
     font-size: 4rem;
   }
+
+  .favorites {
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 28rem));
+    grid-column-gap: 2.5rem;
+    grid-row-gap: 2.5rem;
+  }
+
+  .favorite-btn {
+    font-size: 3rem;
+    padding: 0.7rem 0;
+  }
 }
 
 @media(max-width: 800px) {
@@ -241,6 +284,16 @@ body {
   .ctrl-img {
     width: 40px;
   }
+
+  .favorites {
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 20rem));
+  }
+
+  .favorite-btn {
+    font-size: 2rem;
+    border-radius: 1.5rem;
+    padding: 1rem 0;
+  }
 }
 
 @media(max-width: 650px) {
@@ -262,5 +315,15 @@ body {
 
   .ctrl-img {
     width: 32px;
+  }
+
+  .favorites {
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 16rem));
+  }
+
+  .favorite-btn {
+    font-size: 1.5rem;
+    border-radius: 1rem;
+    padding: 1.2rem 0;
   }
 }
