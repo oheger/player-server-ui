@@ -23,6 +23,7 @@ import com.raquo.laminar.api.L
 import com.raquo.laminar.api.L.*
 import org.querki.jquery.*
 import org.scalajs.dom
+import org.scalajs.dom.Element as DomElement
 import org.scalatest.Assertion
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -37,17 +38,17 @@ class MainSpec extends AnyFlatSpec with Matchers:
   /**
    * Executes a test on DOM elements. The function mounts the given element
    * into the DOM and triggers Laminar to render it. Then it executes the given
-   * block to run tests on it.
+   * block to run tests on it passing the container element as argument.
    *
    * @param element the element to be tested
    * @param block   the test function
    */
-  private def testDom(element: Element)(block: => Unit): Unit =
+  private def testDom(element: Element)(block: DomElement => Unit): Unit =
     val container = dom.document.createElement("div")
     dom.document.body.appendChild(container)
     try
       L.render(container, element)
-      block
+      block(container)
     finally
       dom.document.body.textContent = "" // This removes the container element.
 
@@ -72,12 +73,12 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
+    testDom(element) { container =>
+      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
       DummyUIModel.DummyRadioSources.sources foreach { source =>
-        $(element.ref).find(s"td:contains('${source.name}')").length should be(1)
+        $(container).find(s"td:contains('${source.name}')").length should be(1)
       }
-      $(element.ref).find("div[class='loading-indicator']").length should be(0)
+      $(container).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
@@ -86,8 +87,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      val elements = $(element.ref).find("tr")
+    testDom(element) { container =>
+      val elements = $(container).find("tr")
 
       def assertSourceAt(index: Int, name: String): Unit =
         elements.get(index).get.textContent should include(name)
@@ -105,8 +106,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Failure(new IllegalStateException("Test exception"))
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
+    testDom(element) { container =>
+      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
     }
   }
 
@@ -118,9 +119,9 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(currentSource)
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      $(element.ref).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
-      $(element.ref).find(s"tr:contains('${selectedSource.name}')").length should be(0)
+    testDom(element) { container =>
+      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
+      $(container).find(s"tr:contains('${selectedSource.name}')").length should be(0)
     }
   }
 
@@ -129,8 +130,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      val elements = $(element.ref).find("tr")
+    testDom(element) { container =>
+      val elements = $(container).find("tr")
 
       def assertStyleClassAt(elementIndex: Int, classIndex: Int): Unit =
         val trElement = elements.get(elementIndex).get
@@ -150,8 +151,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      val elements = $(element.ref).find("tr")
+    testDom(element) { container =>
+      val elements = $(container).find("tr")
 
       def assertRankingAt(index: Int, ranking: Int): Unit =
         val rankingStr = "\u2606:" + ranking
@@ -164,35 +165,35 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
-  it should "show an error message if the sources could not be loaded" in {
-    val message = "Failure while loading radio sources"
-    val model = new UIModelTestImpl
-    model setTriedRadioSources Failure(new IllegalStateException(message))
-    val element = Main.radioSourcesElement(model)
-
-    testDom(element) {
-      $(element.ref).find("p").length should be(1)
-      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
-    }
-  }
-
-  it should "show a progress indicator while loading data" in {
-    val element = Main.radioSourcesElement(new UIModelTestImpl)
-
-    testDom(element) {
-      $(element.ref).find("div[class='loading-indicator']").length should be(1)
-    }
-  }
-
   it should "allow switching to another radio source" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
-    testDom(element) {
-      $(element.ref).find("tr").eq(1).trigger("click")
+    testDom(element) { container =>
+      $(container).find("tr").eq(1).trigger("click")
 
       model.newRadioSource should be("s1")
+    }
+  }
+
+  "radioSourceSelectionCheckboxElement" should "generate a checkbox to control the display of radio sources" in {
+    val model = new UIModelTestImpl
+    val element = Main.radioSourceSelectionCheckboxElement(model)
+
+    testDom(element) { container =>
+      $(container).find(s"#${Main.CheckBoxRadioSourceSelection}").length should be(1)
+      $(container).find(s"#${Main.CheckBoxRadioSourceSelection}:checked").length should be(0)
+    }
+  }
+
+  it should "connect the checkbox to the UI model" in {
+    val model = new UIModelTestImpl
+    model.setShowRadioSourceSelection(true)
+    val element = Main.radioSourceSelectionCheckboxElement(model)
+
+    testDom(element) { container =>
+      $(container).find(s"#${Main.CheckBoxRadioSourceSelection}:checked").length should be(1)
     }
   }
 
@@ -201,13 +202,13 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
+    testDom(element) { container =>
       val nodes = $(element.ref)
         .find(s"div.current-source:contains('${DummyUIModel.TestRadioPlaybackState.currentSource.get.name}')")
       nodes.length should be(1)
-      $(element.ref).find("img[src='/playback-stop.svg']").length should be(1)
-      $(element.ref).find("img[src='/playback-start.svg']").length should be(1)
-      $(element.ref).find("div[class='loading-indicator']").length should be(0)
+      $(container).find("img[src='/playback-stop.svg']").length should be(1)
+      $(container).find("img[src='/playback-start.svg']").length should be(1)
+      $(container).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
@@ -217,9 +218,9 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(currentSource)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
-      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
+    testDom(element) { container =>
+      $(container).find("img[src='/playback-stop.png']").length should be(0)
+      $(container).find("img[src='/playback-start.png']").length should be(0)
     }
   }
 
@@ -229,19 +230,19 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Failure(new IllegalStateException(message))
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
-      $(element.ref).find("img[src='/playback-stop.png']").length should be(0)
-      $(element.ref).find("img[src='/playback-start.png']").length should be(0)
-      $(element.ref).find("div[class='loading-indicator']").length should be(0)
+    testDom(element) { container =>
+      $(container).find(s"p.error:contains('$message')").length should be(1)
+      $(container).find("img[src='/playback-stop.png']").length should be(0)
+      $(container).find("img[src='/playback-start.png']").length should be(0)
+      $(container).find("div[class='loading-indicator']").length should be(0)
     }
   }
 
   it should "show a progress indicator while loading data" in {
     val element = Main.radioPlaybackStateElement(new UIModelTestImpl)
 
-    testDom(element) {
-      $(element.ref).find("div[class='loading-indicator']").length should be(1)
+    testDom(element) { container =>
+      $(container).find("div[class='loading-indicator']").length should be(1)
     }
   }
 
@@ -250,12 +251,12 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState.copy(playbackEnabled = false))
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find("button.ctrl-btn-start:enabled").trigger("click")
+    testDom(element) { container =>
+      $(container).find("button.ctrl-btn-start:enabled").trigger("click")
 
       model.startRadioPlaybackCount should be(1)
 
-      $(element.ref).find("button.ctrl-btn-stop:disabled").length should be(1)
+      $(container).find("button.ctrl-btn-stop:disabled").length should be(1)
     }
   }
 
@@ -264,12 +265,12 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find("button.ctrl-btn-stop:enabled").trigger("click")
+    testDom(element) { container =>
+      $(container).find("button.ctrl-btn-stop:enabled").trigger("click")
 
       model.stopRadioPlaybackCount should be(1)
 
-      $(element.ref).find("button.ctrl-btn-start:disabled").length should be(1)
+      $(container).find("button.ctrl-btn-start:disabled").length should be(1)
     }
   }
 
@@ -278,8 +279,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(DummyUIModel.TestRadioPlaybackState)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find("button.ctrl-btn-shutdown").trigger("click")
+    testDom(element) { container =>
+      $(container).find("button.ctrl-btn-shutdown").trigger("click")
 
       model.shutdownCount should be(1)
     }
@@ -292,8 +293,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(radioState)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find(s"div.title-info:contains('$TitleInfo')").length should be(1)
+    testDom(element) { container =>
+      $(container).find(s"div.title-info:contains('$TitleInfo')").length should be(1)
     }
   }
 
@@ -304,8 +305,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedRadioPlaybackState Success(radioState)
     val element = Main.radioPlaybackStateElement(model)
 
-    testDom(element) {
-      $(element.ref).find(s"div.replacement-source:contains('${replacementSource.name}')").length should be(1)
+    testDom(element) { container =>
+      $(container).find(s"div.replacement-source:contains('${replacementSource.name}')").length should be(1)
     }
   }
 
@@ -319,9 +320,9 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedFavoriteSources Success(favorites)
     val element = Main.favoritesElement(model)
 
-    testDom(element) {
+    testDom(element) { container =>
       favorites.zipWithIndex foreach { (source, index) =>
-        $(element.ref).find(s".favorite-btn").eq(index).text() should be(source.name)
+        $(container).find(s".favorite-btn").eq(index).text() should be(source.name)
       }
     }
   }
@@ -332,17 +333,17 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedFavoriteSources Failure(new IllegalStateException(message))
     val element = Main.favoritesElement(model)
 
-    testDom(element) {
-      $(element.ref).find(s"p.error:contains('$message')").length should be(1)
-      $(element.ref).find(".favorite-btn").length should be(0)
+    testDom(element) { container =>
+      $(container).find(s"p.error:contains('$message')").length should be(1)
+      $(container).find(".favorite-btn").length should be(0)
     }
   }
 
   it should "show a progress indicator while loading data" in {
     val element = Main.favoritesElement(new UIModelTestImpl)
 
-    testDom(element) {
-      $(element.ref).find("div[class='loading-indicator']").length should be(1)
+    testDom(element) { container =>
+      $(container).find("div[class='loading-indicator']").length should be(1)
     }
   }
 
@@ -351,8 +352,8 @@ class MainSpec extends AnyFlatSpec with Matchers:
     model setTriedFavoriteSources Success(DummyUIModel.DummyRadioSources.sources.take(2))
     val element = Main.favoritesElement(model)
 
-    testDom(element) {
-      $(element.ref).find("button").eq(1).trigger("click")
+    testDom(element) { container =>
+      $(container).find("button").eq(1).trigger("click")
 
       model.newRadioSource should be("s2")
     }
@@ -373,6 +374,9 @@ private class UIModelTestImpl extends UIModel:
   /** Stores the radio playback source. */
   private val radioPlaybackState: Var[Option[Try[UIModel.RadioPlaybackState]]] = Var(None)
 
+  /** Stores the flag whether to show the radio source selection. */
+  private val radioSourceSelection = Var(false)
+
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
 
@@ -390,6 +394,9 @@ private class UIModelTestImpl extends UIModel:
 
   /** Stores the updated radio source. */
   var newRadioSource = ""
+
+  /** Stores the flag passed to the showRadioSourceSelection() function. */
+  var showRadioSourceSelectionFlag: Option[Boolean] = None
 
   /**
    * Sets the value for the current radio sources. Here a ''Try'' can be
@@ -424,13 +431,21 @@ private class UIModelTestImpl extends UIModel:
   def setTriedRadioPlaybackState(triedState: Try[UIModel.RadioPlaybackState]): Unit =
     radioPlaybackState set Some(triedState)
 
+  /**
+   * Sets the value of the signal for the radio source selection.
+   *
+   * @param visible the new signal value
+   */
+  def setShowRadioSourceSelection(visible: Boolean): Unit =
+    radioSourceSelection set visible
+
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
 
   override def favoritesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = favoriteSources.signal
 
   override def radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = radioPlaybackState.signal
 
-  override def showRadioSourceSelectionSignal: Signal[Boolean] = ???
+  override def showRadioSourceSelectionSignal: Signal[Boolean] = radioSourceSelection.signal
 
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
@@ -447,7 +462,8 @@ private class UIModelTestImpl extends UIModel:
   override def changeRadioSource(sourceID: String): Unit =
     newRadioSource = sourceID
 
-  override def showRadioSourceSelection(visible: Boolean): Unit = ???
+  override def showRadioSourceSelection(visible: Boolean): Unit =
+    showRadioSourceSelectionFlag = Some(visible)
 
   override def shutdown(): Unit =
     shutdownCount += 1
