@@ -486,6 +486,46 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
     assertSignalValue(model.favoritesSignal, Some(Success(expectedFavorites)))
   }
 
+  "showRadioSourceSelectionSignal" should "be false initially" in {
+    val model = createInitializedModel()
+
+    assertSignalValue(model.showRadioSourceSelectionSignal, false)
+  }
+
+  it should "allow enabling it manually" in {
+    val model = createInitializedModel()
+
+    model.showRadioSourceSelection(visible = true)
+
+    assertSignalValue(model.showRadioSourceSelectionSignal, true)
+  }
+
+  it should "allow disabling it manually" in {
+    val model = createInitializedModel()
+    model.showRadioSourceSelection(visible = true)
+
+    assertSignalValue(model.showRadioSourceSelectionSignal, true) flatMap { _ =>
+      model.showRadioSourceSelection(visible = false)
+      assertSignalValue(model.showRadioSourceSelectionSignal, false)
+    }
+  }
+
+  it should "switch to false after a new source is selected" in {
+    val service = new RadioServiceTestImpl {
+      override def changeCurrentSource(id: String): Future[Unit] =
+        Future.successful(())
+    }
+
+    val model = createInitializedModel(service)
+    model.showRadioSourceSelection(visible = true)
+
+    assertSignalValue(model.showRadioSourceSelectionSignal, true) flatMap { _ =>
+      model.changeRadioSource("anotherRadioSource")
+
+      assertSignalValue(model.showRadioSourceSelectionSignal, false)
+    }
+  }
+
   /**
    * A test implementation of [[RadioService]] that provides some default
    * implementations for functions that are frequently used in tests.

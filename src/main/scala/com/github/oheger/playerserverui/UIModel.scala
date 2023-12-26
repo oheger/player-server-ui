@@ -127,6 +127,15 @@ trait UIModel:
     }
 
   /**
+   * Returns a signal that indicates whether the selection of radio sources
+   * should be displayed. The list of all radio sources available is shown only
+   * on demand. This signal determines whether it is visible or not.
+   *
+   * @return the signal controlling the display of the list of radio sources
+   */
+  def showRadioSourceSelectionSignal: Signal[Boolean]
+
+  /**
    * Loads the current list of radio sources from the server. This function
    * should be invoked on application startup.
    */
@@ -155,6 +164,16 @@ trait UIModel:
    * @param sourceID the ID of the new radio source
    */
   def changeRadioSource(sourceID: String): Unit
+
+  /**
+   * Sets the flag whether the list of available radio sources should be
+   * displayed. This function is called as a reaction to user interactions with
+   * certain UI controls.
+   *
+   * @param visible a flag whether the radio source selection should be shown
+   *                or not
+   */
+  def showRadioSourceSelection(visible: Boolean): Unit
 
   /**
    * Shuts down the player server. Also updates the current state to indicate

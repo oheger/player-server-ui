@@ -59,7 +59,7 @@ object DummyUIModel extends UIModel:
     playbackEnabled = CurrentSource.playbackEnabled,
     titleInfo = ""
   )
-  
+
   /** Another object with test data that defines all properties. */
   final val TestRadioPlaybackStateEnhanced = TestRadioPlaybackState.copy(
     replacementSource = Some(DummyRadioSources.sources.head),
@@ -77,6 +77,8 @@ object DummyUIModel extends UIModel:
   override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
     radioPlaybackStateVal.signal
 
+  override val showRadioSourceSelectionSignal: Signal[Boolean] = Signal.fromValue(false)
+
   override def initRadioSources(): Unit = {}
 
   override def initRadioPlaybackState(): Unit = {}
@@ -86,5 +88,7 @@ object DummyUIModel extends UIModel:
   override def stopRadioPlayback(): Unit = {}
 
   override def changeRadioSource(sourceID: String): Unit = {}
+
+  override def showRadioSourceSelection(visible: Boolean): Unit = {}
 
   override def shutdown(): Unit = {}
