@@ -430,6 +430,8 @@ private class UIModelTestImpl extends UIModel:
 
   override def radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] = radioPlaybackState.signal
 
+  override def showRadioSourceSelectionSignal: Signal[Boolean] = ???
+
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
 
@@ -444,6 +446,8 @@ private class UIModelTestImpl extends UIModel:
 
   override def changeRadioSource(sourceID: String): Unit =
     newRadioSource = sourceID
+
+  override def showRadioSourceSelection(visible: Boolean): Unit = ???
 
   override def shutdown(): Unit =
     shutdownCount += 1

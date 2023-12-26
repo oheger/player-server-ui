@@ -61,6 +61,9 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** A Var to store the current title information. */
   private val radioTitleInfoVar = Var("")
 
+  /** A Var for storing the flag to display the radio source selection. */
+  private val showRadioSourceSelectionVar = Var(false)
+
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
@@ -98,6 +101,8 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    */
   private var radioMessageListenerRegistered = false
 
+  override def showRadioSourceSelectionSignal: Signal[Boolean] = showRadioSourceSelectionVar.signal
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   /**
@@ -110,7 +115,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     }
 
   override def initRadioPlaybackState(): Unit =
-  // To avoid race conditions, the service calls are intentionally done sequentially.
+    // To avoid race conditions, the service calls are intentionally done sequentially.
     radioService.loadCurrentSource() onComplete { triedCurrentSource =>
       triedCurrentSource match
         case Success(state) =>
@@ -141,10 +146,14 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
     }
 
   override def changeRadioSource(sourceID: String): Unit =
+    showRadioSourceSelection(visible = false)
     radioService.changeCurrentSource(sourceID) onComplete {
       case Success(_) => radioCurrentSourceIDVar set Some(sourceID)
       case Failure(exception) => radioPlaybackStateErrorVar set Some(exception)
     }
+
+  override def showRadioSourceSelection(visible: Boolean): Unit =
+    showRadioSourceSelectionVar set visible
 
   override def shutdown(): Unit =
     radioPlaybackStateErrorVar set Some(new IllegalStateException("Server is no longer available."))
