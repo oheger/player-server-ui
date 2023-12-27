@@ -50,11 +50,13 @@ object Main:
 
   def appElement(): Element =
     div(
-      className := "container",
       radioSourceSelectionCheckboxElement(),
-      radioPlaybackStateElement(),
-      favoritesElement(),
-      radioSourcesElement()
+      radioSourcesElement(),
+      div(
+        className := "container",
+        radioPlaybackStateElement(),
+        favoritesElement(),
+      )
     )
   end appElement
 
