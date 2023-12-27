@@ -358,6 +358,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
       model.newRadioSource should be("s2")
     }
   }
+
+  it should "generate a button to select a radio source" in {
+    val model = new UIModelTestImpl
+    model setTriedFavoriteSources Success(DummyUIModel.DummyRadioSources.sources.take(2))
+    val element = Main.favoritesElement(model)
+
+    testDom(element) { container =>
+      $(container).find("button").eq(2).trigger("click")
+
+      model.showRadioSourceSelectionFlag should be(Some(true))
+    }
+  }
 end MainSpec
 
 /**

@@ -181,6 +181,10 @@ body {
   box-shadow: .2rem .2rem 1rem #0D160B;
 }
 
+.source-selection-img {
+  width: 4rem;
+}
+
 /* List of radio sources. */
 
 .select-source {
@@ -262,6 +266,10 @@ body {
     font-size: 3rem;
     padding: 0.7rem 0;
   }
+
+  .source-selection-img {
+    width: 3rem;
+  }
 }
 
 @media(max-width: 800px) {
@@ -294,6 +302,10 @@ body {
     border-radius: 1.5rem;
     padding: 1rem 0;
   }
+
+  .source-selection-img {
+    width: 2rem;
+  }
 }
 
 @media(max-width: 650px) {
@@ -325,5 +337,9 @@ body {
     font-size: 1.5rem;
     border-radius: 1rem;
     padding: 1.2rem 0;
+  }
+
+  .source-selection-img {
+    width: 1.5rem;
   }
 }

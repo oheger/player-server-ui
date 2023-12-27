@@ -42,6 +42,12 @@ object Main:
   /** The UI model. */
   private val uiModel = createUiModel()
 
+  /**
+   * Constant for a special radio source used internally as an indicator in
+   * the favorite sources to generate a button to select a radio source.
+   */
+  private val SelectRadioSource = RadioModel.RadioSource("", "", -1)
+
   def appElement(): Element =
     div(
       className := "container",
@@ -71,9 +77,13 @@ object Main:
    */
   private[playerserverui] def favoritesElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.favoritesSignal, "favorites-wrapper") { favoritesSignal =>
+      val extendedFavoritesSignal = favoritesSignal map { favorites =>
+        favorites.appended(SelectRadioSource)
+      }
+
       val favoritesElement = div(
         className := "favorites",
-        children <-- favoritesSignal.split(_.id) { (id, _, sourceSignal) =>
+        children <-- extendedFavoritesSignal.split(_.id) { (id, _, sourceSignal) =>
           renderFavoriteSource(model, id, sourceSignal)
         }
       )
@@ -218,7 +228,8 @@ object Main:
     )
 
   /**
-   * Generates an element to display a favorite radio source.
+   * Generates an element to display a favorite radio source. This function 
+   * also handles the special source to trigger a source selection.
    *
    * @param model        the UI model
    * @param sourceID     the ID of the favorite radio source
@@ -228,11 +239,22 @@ object Main:
   private def renderFavoriteSource(model: UIModel,
                                    sourceID: String,
                                    sourceSignal: Signal[RadioModel.RadioSource]): Element =
-    button(
-      className := "favorite-btn",
-      onClick --> { _ => model.changeRadioSource(sourceID) },
-      child.text <-- sourceSignal.map(_.name)
-    )
+    if sourceID == SelectRadioSource.id then
+      val image = img(
+        src := "/source-icon.svg",
+        className := "source-selection-img"
+      )
+      button(
+        className := "favorite-btn",
+        onClick --> { _ => model.showRadioSourceSelection(visible = true) },
+        image
+      )
+    else
+      button(
+        className := "favorite-btn",
+        onClick --> { _ => model.changeRadioSource(sourceID) },
+        child.text <-- sourceSignal.map(_.name)
+      )
 
   /**
    * Generates an element to display a radio source.
