@@ -119,13 +119,20 @@ object Main:
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal, "select-source") { sourcesSignal =>
       val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
 
+      val closeBtn = div(
+        className := "source-selection-close-btn",
+        onClick --> { _ => model.showRadioSourceSelection(visible = false) },
+        "\u2715"
+      )
+
       val sourcesElement = ul(
         className := "radio-sources-list",
         children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>
           renderRadioSourceForSelection(model, id, sourceSignal)
         }
       )
-      Signal.fromValue(List(sourcesElement))
+
+      Signal.fromValue(List(closeBtn, sourcesElement))
     }
 
   /**

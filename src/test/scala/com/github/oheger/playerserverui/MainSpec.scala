@@ -124,7 +124,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(container).find(s"li:contains('${selectedSource.name}')").length should be(0)
     }
   }
-  
+
   it should "display the ranking of radio sources" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
@@ -153,6 +153,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
       $(container).find("li").eq(1).trigger("click")
 
       model.newRadioSource should be("s1")
+    }
+  }
+
+  it should "add a button to close the selection" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) { container =>
+      $(container).find(".source-selection-close-btn").trigger("click")
+
+      model.showRadioSourceSelectionFlag should be(Some(false))
     }
   }
 
