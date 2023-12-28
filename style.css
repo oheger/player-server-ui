@@ -200,6 +200,7 @@ body {
   background-color: #0D1B2A;
   overflow: auto;
   display: none;
+  animation: show-source-selection 1s;
 }
 
 #showRadioSourceSelection:checked ~ .select-source {
@@ -245,6 +246,16 @@ body {
 .radio-source-ranking {
   grid-column: 2 / 3;
   grid-row: 2 / 3;
+}
+
+@keyframes show-source-selection {
+  0% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
 }
 
 /* Making project responsive. */
