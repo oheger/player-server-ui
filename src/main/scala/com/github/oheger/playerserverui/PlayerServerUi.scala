@@ -119,14 +119,11 @@ object Main:
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal, "select-source") { sourcesSignal =>
       val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
 
-      val sourcesElement = div(
-        table(idAttr := "radioSourcesTable",
-          tbody(
-            children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>
-              renderRadioSource(model, id, sourceSignal, rankingStepSignal)
-            }
-          )
-        )
+      val sourcesElement = ul(
+        className := "radio-sources-list",
+        children <-- sourcesSignal.split(_.id) { (id, _, sourceSignal) =>
+          renderRadioSourceForSelection(model, id, sourceSignal)
+        }
       )
       Signal.fromValue(List(sourcesElement))
     }
@@ -186,46 +183,31 @@ object Main:
     }
 
   /**
-   * Generates an element for the specified radio source.
+   * Generates an element to display a single radio source in the list that
+   * shows all available radio sources.
    *
-   * @param model             the UI model
-   * @param sourceID          the ID of the current radio source
-   * @param sourceSignal      the signal for the radio source to be rendered
-   * @param rankingStepSignal the signal for the mapping of the ranking to
-   *                          style classes
+   * @param model        the UI model
+   * @param sourceID     the ID of the current radio source
+   * @param sourceSignal the signal for the radio source to be rendered
    * @return the element representing this radio source
    */
-  private def renderRadioSource(model: UIModel,
-                                sourceID: String,
-                                sourceSignal: Signal[RadioModel.RadioSource],
-                                rankingStepSignal: Signal[Double]): Element =
-    val rankingSignal = sourceSignal.map(_.ranking)
-    val styleClassIdxSignal = for
-      ranking <- rankingSignal
-      rankingStep <- rankingStepSignal
-    yield math.floor(ranking / rankingStep).toInt
-    val iconClassSignal = styleClassIdxSignal.map(idx => s"radioSourceIcon$idx")
-    val itemClassSignal = styleClassIdxSignal.map(idx => s"radioSourceItem$idx")
-    val rankingTextSignal = rankingSignal.map(ranking => s"\u2606:$ranking")
-
-    tr(className <-- itemClassSignal,
+  private def renderRadioSourceForSelection(model: UIModel,
+                                            sourceID: String,
+                                            sourceSignal: Signal[RadioModel.RadioSource]): Element =
+    li(
+      className := "radio-source-item",
       onClick --> { _ => model.changeRadioSource(sourceID) },
-      td(
-        textAlign := "right",
-        verticalAlign := "top",
-        img(
-          src := "/source-icon.svg",
-          className <-- iconClassSignal
-        )
+      img(
+        className := "radio-source-icon",
+        src := "/source-icon.svg"
       ),
-      td(
-        div(
-          child.text <-- sourceSignal.map(_.name)
-        ),
-        div(
-          className := "radioSourceRanking",
-          child.text <-- rankingTextSignal
-        )
+      a(
+        className := "radio-source-link",
+        child.text <-- sourceSignal.map { source => s"${source.name}" }
+      ),
+      div(
+        className := "radio-source-ranking",
+        child.text <-- sourceSignal.map { source => s"\u2606:${source.ranking}" }
       )
     )
 

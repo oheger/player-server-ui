@@ -74,9 +74,9 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
+      $(container).find("li").length should be(DummyUIModel.DummyRadioSources.sources.size)
       DummyUIModel.DummyRadioSources.sources foreach { source =>
-        $(container).find(s"td:contains('${source.name}')").length should be(1)
+        $(container).find(s"li:contains('${source.name}')").length should be(1)
       }
       $(container).find("div[class='loading-indicator']").length should be(0)
     }
@@ -88,7 +88,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      val elements = $(container).find("tr")
+      val elements = $(container).find("li")
 
       def assertSourceAt(index: Int, name: String): Unit =
         elements.get(index).get.textContent should include(name)
@@ -107,7 +107,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size)
+      $(container).find("li").length should be(DummyUIModel.DummyRadioSources.sources.size)
     }
   }
 
@@ -120,39 +120,18 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      $(container).find("tr").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
-      $(container).find(s"tr:contains('${selectedSource.name}')").length should be(0)
+      $(container).find("li").length should be(DummyUIModel.DummyRadioSources.sources.size - 1)
+      $(container).find(s"li:contains('${selectedSource.name}')").length should be(0)
     }
   }
-
-  it should "use different styles based on the ranking of radio sources" in {
-    val model = new UIModelTestImpl
-    model setRadioSources DummyUIModel.DummyRadioSources
-    val element = Main.radioSourcesElement(model)
-
-    testDom(element) { container =>
-      val elements = $(container).find("tr")
-
-      def assertStyleClassAt(elementIndex: Int, classIndex: Int): Unit =
-        val trElement = elements.get(elementIndex).get
-        trElement.attributes.getNamedItem("class").value should be("radioSourceItem" + classIndex)
-        trElement.getElementsByClassName("radioSourceIcon" + classIndex).length should be(1)
-
-      assertStyleClassAt(0, 3)
-      assertStyleClassAt(1, 3)
-      assertStyleClassAt(2, 2)
-      assertStyleClassAt(6, 0)
-      assertStyleClassAt(7, 0)
-    }
-  }
-
+  
   it should "display the ranking of radio sources" in {
     val model = new UIModelTestImpl
     model setRadioSources DummyUIModel.DummyRadioSources
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      val elements = $(container).find("tr")
+      val elements = $(container).find("li")
 
       def assertRankingAt(index: Int, ranking: Int): Unit =
         val rankingStr = "\u2606:" + ranking
@@ -171,7 +150,7 @@ class MainSpec extends AnyFlatSpec with Matchers:
     val element = Main.radioSourcesElement(model)
 
     testDom(element) { container =>
-      $(container).find("tr").eq(1).trigger("click")
+      $(container).find("li").eq(1).trigger("click")
 
       model.newRadioSource should be("s1")
     }

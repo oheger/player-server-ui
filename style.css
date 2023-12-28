@@ -28,7 +28,7 @@ body {
 .container {
   display: grid;
   grid-template-columns: 6rem repeat(6, 1fr) 6rem;
-  grid-template-rows: repeat(3, min-content);
+  grid-template-rows: repeat(2, min-content);
   grid-row-gap: 5rem;
   margin-top: 1.6rem;
 }
@@ -185,60 +185,66 @@ body {
   width: 4rem;
 }
 
-/* List of radio sources. */
+/* Modal box to select a radio source. */
 
 .select-source {
-  width: 100%;
-  padding-top: 2em;
-  grid-column: 2 / 8;
-  grid-row: 3 / 4;
+  position: fixed;
+  width: 90vw;
+  height: 90vh;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: .1rem solid #586994;
+  border-radius: .5rem;
+  z-index: 100;
+  background-color: #0D1B2A;
+  overflow: auto;
+  display: none;
 }
 
-#radioSourcesTable {
-  margin: 0 auto;
-  border-collapse: collapse;
+#showRadioSourceSelection:checked ~ .select-source {
+  display: block;
 }
 
-.radioSourceIcon3 {
-  height: 1.5em;
+#showRadioSourceSelection:checked ~ .container {
+  pointer-events: none;
+  opacity: .5;
 }
 
-.radioSourceItem3 {
-  font-size: 1.5em;
-  color: #729FCF;
-  background-color: #faea41;
+.radio-sources-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
 }
 
-.radioSourceIcon2 {
-  height: 1.3em;
+.radio-source-item {
+  display: grid;
+  grid-template-columns: min-content 1fr;
+  grid-template-rows: repeat(2, min-content);
+  grid-column-gap: 2rem;
+  cursor: pointer;
+  font-size: 5rem;
+  color: #197BBD;
+  margin-bottom: 1.8rem;
 }
 
-.radioSourceItem2 {
-  font-size: 1.3em;
-  background-color: #dbce3b;
+.radio-source-link {
+  text-decoration: none;
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
 }
 
-.radioSourceIcon1 {
-  height: 1.2em;
+.radio-source-icon {
+  width: 3.5rem;
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+  align-self: center;
 }
 
-.radioSourceItem1 {
-  font-size: 1.2em;
-  background-color: #a69c2d;
-}
-
-.radioSourceIcon0 {
-  height: 1em;
-}
-
-.radioSourceItem0 {
-  background-color: #82821e;
-}
-
-.radioSourceRanking {
-  font-size: smaller;
-  font-weight: 100;
-  margin-bottom: 1.1em;
+.radio-source-ranking {
+  grid-column: 2 / 3;
+  grid-row: 2 / 3;
 }
 
 /* Making project responsive. */
@@ -306,6 +312,16 @@ body {
   .source-selection-img {
     width: 2rem;
   }
+
+  .radio-source-item {
+    template-column-gap: 1.5rem;
+    font-size: 4rem;
+    margin-bottom: 1rem;
+  }
+
+  .radio-source-icon {
+    width: 3rem;
+  }
 }
 
 @media(max-width: 650px) {
@@ -341,5 +357,15 @@ body {
 
   .source-selection-img {
     width: 1.5rem;
+  }
+
+  .radio-source-item {
+    template-column-gap: .8rem;
+    font-size: 2rem;
+    margin-bottom: .8rem;
+  }
+
+  .radio-source-icon {
+    width: 1.4rem;
   }
 }
