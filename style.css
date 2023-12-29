@@ -196,6 +196,7 @@ body {
   transform: translate(-50%, -50%);
   grid-template-columns: 5rem 1fr 1fr 5rem;
   grid-template-rows: repeat(2, min-content);
+  grid-column-gap: 2rem;
   grid-row-gap: 2rem;
   border: .1rem solid #586994;
   border-radius: .5rem;
@@ -259,6 +260,36 @@ body {
   color: #586994;
   font-size: 4rem;
   text-align: center;
+}
+
+.sort-mode-btn {
+  width: 16rem;
+  cursor: pointer;
+  font-size: 4rem;
+  color: #A2ABAB;
+  background-image: linear-gradient(to top, #586994, #197BBD);
+  outline: none;
+  border-radius: 2rem;
+  border: none;
+  box-shadow: .2rem .2rem 1rem #0D160B;
+}
+
+.sort-mode-btn:disabled {
+  background-color: #586994;
+  background-image: none;
+  box-shadow: 0 0 0 #000;
+  cursor: initial;
+}
+
+.sort-mode-alpha {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  justify-self: end;
+}
+
+.sort-mode-rank {
+  grid-column: 3 / 4;
+  grid-row: 1 / 2;
 }
 
 @keyframes show-source-selection {
@@ -346,6 +377,11 @@ body {
   .radio-source-icon {
     width: 3rem;
   }
+
+  .sort-mode-btn {
+    width: 10rem;
+    font-size: 3rem;
+  }
 }
 
 @media(max-width: 650px) {
@@ -398,6 +434,11 @@ body {
   }
 
   .source-selection-close-btn {
+    font-size: 2rem;
+  }
+
+  .sort-mode-btn {
+    width: 8rem;
     font-size: 2rem;
   }
 }
