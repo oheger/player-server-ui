@@ -64,6 +64,9 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** A Var for storing the flag to display the radio source selection. */
   private val showRadioSourceSelectionVar = Var(false)
 
+  /** A var for storing the sort mode for radio sources. */
+  private val radioSourcesSortModeVar = Var(UIModel.RadioSourcesSortMode.Ranking)
+
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
@@ -102,6 +105,8 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   private var radioMessageListenerRegistered = false
 
   override def showRadioSourceSelectionSignal: Signal[Boolean] = showRadioSourceSelectionVar.signal
+
+  override def radioSourcesSortModeSignal: Signal[UIModel.RadioSourcesSortMode] = radioSourcesSortModeVar.signal
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -154,6 +159,9 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
 
   override def showRadioSourceSelection(visible: Boolean): Unit =
     showRadioSourceSelectionVar set visible
+
+  override def setRadioSourcesSortMode(mode: UIModel.RadioSourcesSortMode): Unit =
+    radioSourcesSortModeVar set mode
 
   override def shutdown(): Unit =
     radioPlaybackStateErrorVar set Some(new IllegalStateException("Server is no longer available."))

@@ -450,6 +450,9 @@ private class UIModelTestImpl extends UIModel:
 
   override def showRadioSourceSelectionSignal: Signal[Boolean] = radioSourceSelection.signal
 
+  override def radioSourcesSortModeSignal: Signal[UIModel.RadioSourcesSortMode] =
+    Signal.fromValue(UIModel.RadioSourcesSortMode.Ranking)
+
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
 
@@ -467,6 +470,8 @@ private class UIModelTestImpl extends UIModel:
 
   override def showRadioSourceSelection(visible: Boolean): Unit =
     showRadioSourceSelectionFlag = Some(visible)
+
+  override def setRadioSourcesSortMode(mode: UIModel.RadioSourcesSortMode): Unit = ???
 
   override def shutdown(): Unit =
     shutdownCount += 1
