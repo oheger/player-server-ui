@@ -117,12 +117,31 @@ object Main:
    */
   private[playerserverui] def radioSourcesElement(model: UIModel = uiModel): Element =
     elementWithErrorAndLoadingIndicator(model.sortedRadioSourcesSignal, "select-source") { sourcesSignal =>
-      val rankingStepSignal = sourcesSignal.map(sources => (sources.map(_.ranking).max + 1) / 4.0)
+      val sortAlphaDisabledSignal = model.radioSourcesSortModeSignal map {
+        _ == UIModel.RadioSourcesSortMode.Alphabetic
+      }
+      val sortRankingDisabledSignal = sortAlphaDisabledSignal map {
+        !_
+      }
 
       val closeBtn = div(
         className := "source-selection-close-btn",
         onClick --> { _ => model.showRadioSourceSelection(visible = false) },
         "\u2715"
+      )
+
+      val sortAlphaBtn = button(
+        className := "sort-mode-btn sort-mode-alpha",
+        disabled <-- sortAlphaDisabledSignal,
+        onClick --> { _ => model.setRadioSourcesSortMode(UIModel.RadioSourcesSortMode.Alphabetic) },
+        "A..Z"
+      )
+
+      val sortRankBn = button(
+        className := "sort-mode-btn sort-mode-rank",
+        disabled <-- sortRankingDisabledSignal,
+        onClick --> { _ => model.setRadioSourcesSortMode(UIModel.RadioSourcesSortMode.Ranking) },
+        "\u2606"
       )
 
       val sourcesElement = ul(
@@ -132,7 +151,7 @@ object Main:
         }
       )
 
-      Signal.fromValue(List(closeBtn, sourcesElement))
+      Signal.fromValue(List(closeBtn, sortAlphaBtn, sortRankBn, sourcesElement))
     }
 
   /**
