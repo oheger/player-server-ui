@@ -111,6 +111,13 @@ body {
   font-size: 6rem;
   font-family: 'Electrolize', sans-serif;
   color: #197BBD;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+@keyframes title-info-marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 
 .ctrl-img {

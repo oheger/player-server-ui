@@ -48,6 +48,12 @@ object Main:
    */
   private val SelectRadioSource = RadioModel.RadioSource("", "", -1)
 
+  /**
+   * Constant for text to be displayed if no title information is
+   * available yet.
+   */
+  private val UnknownTitle = "???   ***   ???"
+
   def appElement(): Element =
     div(
       radioSourceSelectionCheckboxElement(),
@@ -187,10 +193,8 @@ object Main:
           val divSelectedSource = radioSourceElement(Some(source), selectedSourceReplacedStyles)
           val divReplacementSource = radioSourceElement(currentRadioState.replacementSource,
             List("replacement-source"))
-          val divTitle = div(
-            className := "title-info",
-            currentRadioState.titleInfo
-          )
+          val divTitle = generateTitleInfo(currentRadioState)
+
           val divDisplay = div(
             className := "radio-display",
             divSelectedSource,
@@ -207,6 +211,42 @@ object Main:
         }
       }
     }
+
+  /**
+   * Generates the element to display information about the currently played
+   * title. This will use a marquee effect, so that longer text can be 
+   * displayed without messing up the layout.
+   *
+   * @param currentRadioState the current radio state
+   * @return the element to render the title information
+   */
+  private def generateTitleInfo(currentRadioState: UIModel.RadioPlaybackState): Element =
+    val titleInfo = if currentRadioState.titleInfo.nonEmpty then currentRadioState.titleInfo
+    else UnknownTitle
+    val spanTitle = span(
+      styleAttr := titleInfoStyle(titleInfo),
+      titleInfo
+    )
+    div(
+      className := "title-info",
+      spanTitle
+    )
+
+  /**
+   * Generates inline CSS styles for the marquee animation of the title 
+   * information. The duration of the animation must be aligned to the length
+   * of the text, so that it has a constant speed. Therefore, the styles must 
+   * be generated dynamically.
+   *
+   * @param info the info text to be displayed
+   * @return CSS styles to animate this text
+   */
+  private def titleInfoStyle(info: String): String =
+    s"""
+       |display: inline-block;
+       |padding-left: 105%;
+       |animation: title-info-marquee ${info.length / 5}s linear infinite;
+       |""".stripMargin
 
   /**
    * Generates an element to display a single radio source in the list that
