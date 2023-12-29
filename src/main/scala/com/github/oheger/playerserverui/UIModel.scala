@@ -16,7 +16,7 @@
 
 package com.github.oheger.playerserverui
 
-import com.github.oheger.playerserverui.UIModel.{RadioPlaybackState, mapOptionalErrorSignal}
+import com.github.oheger.playerserverui.UIModel.{RadioPlaybackState, RadioSourcesSortMode, mapOptionalErrorSignal, mapOptionalErrorValue, sortFunctionForMode}
 import com.github.oheger.playerserverui.model.RadioModel
 import com.raquo.airstream.core.Signal
 
@@ -40,6 +40,36 @@ object UIModel:
                                       titleInfo: String)
 
   /**
+   * An enumeration class that defines the supported sort modes for radio
+   * sources. The dialog box showing all radio sources can be sorted in the
+   * ways defined here.
+   */
+  enum RadioSourcesSortMode:
+    /** The radio sources are sorted alphabetically by their names. */
+    case Alphabetic
+
+    /**
+     * The radio sources are sorted by their rankings and then by their names. 
+     */
+    case Ranking
+
+  /**
+   * Helper function to apply a mapping on an optional value that can indicate
+   * a failure, as is used by a number of signals. This function applies the
+   * given mapping function only if the value is a ''Some(Success())''.
+   *
+   * @param value the value to map
+   * @param f     the mapping function on normal signal values
+   * @tparam A the data type of the signal
+   * @tparam B the result type of the mapping function
+   * @return the resulting mapped value
+   */
+  private def mapOptionalErrorValue[A, B](value: Option[Try[A]])(f: A => B): Option[Try[B]] =
+    value map { triedValue =>
+      triedValue map f
+    }
+
+  /**
    * Helper function to apply a mapping on a signal that contains an optional
    * value and can indicate a failure. This function handles mapping of the
    * ''Optional'' and the ''Try''; the provided mapping function is only
@@ -52,11 +82,41 @@ object UIModel:
    * @return the resulting mapped signal
    */
   private def mapOptionalErrorSignal[A, B](signal: Signal[Option[Try[A]]])(f: A => B): Signal[Option[Try[B]]] =
-    signal.map { opt =>
-      opt.map { triedValue =>
-        triedValue map f
-      }
-    }
+    signal.map(mapOptionalErrorValue(_)(f))
+
+  /**
+   * Comparison function to sort two radio sources alphabetically by their
+   * names.
+   *
+   * @param src1 radio source 1
+   * @param src2 radio source 2
+   * @return flag whether source 1 is less than source 2
+   */
+  private def sortRadioSourcesByName(src1: RadioModel.RadioSource, src2: RadioModel.RadioSource): Boolean =
+    src1.name.compareToIgnoreCase(src2.name) < 0
+
+  /**
+   * Comparison function to sort two radio sources by their ranking and then by
+   * their names.
+   *
+   * @param src1 radio source 1
+   * @param src2 radio source 2
+   * @return flag whether source 1 is less than source 2
+   */
+  private def sortRadioSourcesByRanking(src1: RadioModel.RadioSource, src2: RadioModel.RadioSource): Boolean =
+    (src1.ranking > src2.ranking) || (src1.ranking == src2.ranking && sortRadioSourcesByName(src1, src2))
+
+  /**
+   * Returns the sort function to be used for the given sort mode.
+   *
+   * @param sortMode the sort mode
+   * @return the corresponding sort function
+   */
+  private def sortFunctionForMode(sortMode: RadioSourcesSortMode):
+  (RadioModel.RadioSource, RadioModel.RadioSource) => Boolean =
+    sortMode match
+      case RadioSourcesSortMode.Alphabetic => sortRadioSourcesByName
+      case RadioSourcesSortMode.Ranking => sortRadioSourcesByRanking
 end UIModel
 
 /**
@@ -96,12 +156,13 @@ trait UIModel:
    * @return the signal with the sorted list of radio sources
    */
   def sortedRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
-    mapOptionalErrorSignal(selectableRadioSourcesSignal) { sources =>
-      sources.sortWith { (src1, src2) =>
-        (src1.ranking > src2.ranking) ||
-          (src1.ranking == src2.ranking && src1.name.compareToIgnoreCase(src2.name) < 0)
+    for
+      sortMode <- radioSourcesSortModeSignal
+      sources <- selectableRadioSourcesSignal
+    yield
+      mapOptionalErrorValue(sources) { value =>
+        value.sortWith(sortFunctionForMode(sortMode))
       }
-    }
 
   /**
    * Returns a signal for the playback state of the current radio source. This
@@ -134,6 +195,13 @@ trait UIModel:
    * @return the signal controlling the display of the list of radio sources
    */
   def showRadioSourceSelectionSignal: Signal[Boolean]
+
+  /**
+   * Returns a signal that determines the sort mode for radio sources.
+   *
+   * @return the signal with the sort mode for radio sources
+   */
+  def radioSourcesSortModeSignal: Signal[RadioSourcesSortMode]
 
   /**
    * Loads the current list of radio sources from the server. This function
@@ -174,6 +242,14 @@ trait UIModel:
    *                or not
    */
   def showRadioSourceSelection(visible: Boolean): Unit
+
+  /**
+   * Sets the sort mode for radio sources. This allows changing the sort order
+   * of radio sources in the dialog to select a radio source.
+   *
+   * @param mode the new sort mode
+   */
+  def setRadioSourcesSortMode(mode: RadioSourcesSortMode): Unit
 
   /**
    * Shuts down the player server. Also updates the current state to indicate

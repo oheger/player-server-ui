@@ -16,6 +16,7 @@
 
 package com.github.oheger.playerserverui
 
+import com.github.oheger.playerserverui.UIModel.RadioSourcesSortMode.Ranking
 import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.Signal
@@ -79,6 +80,8 @@ object DummyUIModel extends UIModel:
 
   override val showRadioSourceSelectionSignal: Signal[Boolean] = Signal.fromValue(false)
 
+  override val radioSourcesSortModeSignal: Signal[UIModel.RadioSourcesSortMode] = Signal.fromValue(Ranking)
+
   override def initRadioSources(): Unit = {}
 
   override def initRadioPlaybackState(): Unit = {}
@@ -90,5 +93,7 @@ object DummyUIModel extends UIModel:
   override def changeRadioSource(sourceID: String): Unit = {}
 
   override def showRadioSourceSelection(visible: Boolean): Unit = {}
+
+  override def setRadioSourcesSortMode(mode: UIModel.RadioSourcesSortMode): Unit = {}
 
   override def shutdown(): Unit = {}

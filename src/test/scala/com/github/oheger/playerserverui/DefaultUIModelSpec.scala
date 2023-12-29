@@ -16,6 +16,7 @@
 
 package com.github.oheger.playerserverui
 
+import com.github.oheger.playerserverui.UIModel.RadioSourcesSortMode.Alphabetic
 import com.github.oheger.playerserverui.model.RadioModel
 import com.github.oheger.playerserverui.service.RadioService
 import com.raquo.airstream.core.{EventStream, Observer, Signal}
@@ -37,6 +38,18 @@ object DefaultUIModelSpec:
    * not actually invoked, this is a dummy URL.
    */
   private val ServiceUrl = "https://radio.example.org"
+
+  /**
+   * Returns the radio sources with the given IDs from the [[DummyUIModel]] in
+   * the specified order.
+   *
+   * @param ids the IDs of the desired radio sources
+   * @return the ordered list with these radio sources
+   */
+  private def radioSourcesByID(ids: String*): List[RadioModel.RadioSource] =
+    ids.map { id =>
+      DummyUIModel.DummyRadioSources.sources.find(_.id == id).get
+    }.toList
 end DefaultUIModelSpec
 
 /**
@@ -524,6 +537,21 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
       assertSignalValue(model.showRadioSourceSelectionSignal, false)
     }
+  }
+
+  "sortedRadioSourcesSignal" should "initially sort radio sources by their rankings" in {
+    val expectedSources = radioSourcesByID("s2", "s1", "s5", "s4", "s6", "s3", "s8", "s7")
+    val model = createInitializedModel()
+
+    assertSignalValue(model.sortedRadioSourcesSignal, Some(Success(expectedSources)))
+  }
+
+  it should "support the sort mode 'alphabetically'" in {
+    val expectedSources = radioSourcesByID("s6", "s8", "s3", "s7", "s4", "s5", "s2", "s1")
+    val model = createInitializedModel()
+    model setRadioSourcesSortMode Alphabetic
+
+    assertSignalValue(model.sortedRadioSourcesSignal, Some(Success(expectedSources)))
   }
 
   /**
