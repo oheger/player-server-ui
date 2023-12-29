@@ -168,6 +168,34 @@ class MainSpec extends AnyFlatSpec with Matchers:
     }
   }
 
+  it should "add a button to switch to sort mode alphabetically" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) { container =>
+      $(container).find("button").length should be(2)
+      $(container).find("button.sort-mode-btn:disabled").length should be(1)
+      $(container).find("button.sort-mode-btn:enabled").trigger("click")
+
+      model.radioSourcesSortMode should be(Some(UIModel.RadioSourcesSortMode.Alphabetic))
+    }
+  }
+
+  it should "add a button to switch to sort mode ranking" in {
+    val model = new UIModelTestImpl
+    model setRadioSources DummyUIModel.DummyRadioSources
+    model setCurrentRadioSourceSortMode UIModel.RadioSourcesSortMode.Alphabetic
+    val element = Main.radioSourcesElement(model)
+
+    testDom(element) { container =>
+      $(container).find("button.sort-mode-btn:disabled").length should be(1)
+      $(container).find("button.sort-mode-btn:enabled").trigger("click")
+
+      model.radioSourcesSortMode should be(Some(UIModel.RadioSourcesSortMode.Ranking))
+    }
+  }
+
   "radioSourceSelectionCheckboxElement" should "generate a checkbox to control the display of radio sources" in {
     val model = new UIModelTestImpl
     val element = Main.radioSourceSelectionCheckboxElement(model)
@@ -380,6 +408,9 @@ private class UIModelTestImpl extends UIModel:
   /** Stores the flag whether to show the radio source selection. */
   private val radioSourceSelection = Var(false)
 
+  /** Stores the current sort mode for radio sources. */
+  private val radioSortModeVar = Var(UIModel.RadioSourcesSortMode.Ranking)
+
   /** A counter for the invocations of ''initRadioSources()''. */
   var initRadioSourcesCount = 0
 
@@ -400,6 +431,9 @@ private class UIModelTestImpl extends UIModel:
 
   /** Stores the flag passed to the showRadioSourceSelection() function. */
   var showRadioSourceSelectionFlag: Option[Boolean] = None
+
+  /** Stores the updated sort mode for radio sources. */
+  var radioSourcesSortMode: Option[UIModel.RadioSourcesSortMode] = None
 
   /**
    * Sets the value for the current radio sources. Here a ''Try'' can be
@@ -442,6 +476,14 @@ private class UIModelTestImpl extends UIModel:
   def setShowRadioSourceSelection(visible: Boolean): Unit =
     radioSourceSelection set visible
 
+  /**
+   * Sets the sort mode for radio sources reported by this model.
+   *
+   * @param mode the current sort mode for radio sources
+   */
+  def setCurrentRadioSourceSortMode(mode: UIModel.RadioSourcesSortMode): Unit =
+    radioSortModeVar set mode
+
   override def radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSources.signal
 
   override def favoritesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = favoriteSources.signal
@@ -450,8 +492,7 @@ private class UIModelTestImpl extends UIModel:
 
   override def showRadioSourceSelectionSignal: Signal[Boolean] = radioSourceSelection.signal
 
-  override def radioSourcesSortModeSignal: Signal[UIModel.RadioSourcesSortMode] =
-    Signal.fromValue(UIModel.RadioSourcesSortMode.Ranking)
+  override def radioSourcesSortModeSignal: Signal[UIModel.RadioSourcesSortMode] = radioSortModeVar.signal
 
   override def initRadioSources(): Unit =
     initRadioSourcesCount += 1
@@ -471,7 +512,8 @@ private class UIModelTestImpl extends UIModel:
   override def showRadioSourceSelection(visible: Boolean): Unit =
     showRadioSourceSelectionFlag = Some(visible)
 
-  override def setRadioSourcesSortMode(mode: UIModel.RadioSourcesSortMode): Unit = ???
+  override def setRadioSourcesSortMode(mode: UIModel.RadioSourcesSortMode): Unit =
+    radioSourcesSortMode = Some(mode)
 
   override def shutdown(): Unit =
     shutdownCount += 1
