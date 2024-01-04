@@ -149,6 +149,13 @@ object Main:
         onClick --> { _ => model.setRadioSourcesSortMode(UIModel.RadioSourcesSortMode.Ranking) },
         "\u2606"
       )
+      
+      val selectSourceHeader = div(
+        className := "select-source-header",
+        sortAlphaBtn,
+        sortRankBn,
+        closeBtn
+      )
 
       val sourcesElement = ul(
         className := "radio-sources-list",
@@ -157,7 +164,7 @@ object Main:
         }
       )
 
-      Signal.fromValue(List(closeBtn, sortAlphaBtn, sortRankBn, sourcesElement))
+      Signal.fromValue(List(selectSourceHeader, sourcesElement))
     }
 
   /**
