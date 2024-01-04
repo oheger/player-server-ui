@@ -61,12 +61,16 @@ object RadioModel:
   /**
    * A data class representing the status of the radio source. It contains the
    * IDs of the currently selected source and a replacement source if defined.
+   * If available, information about the current title is included as well.
    *
    * @param currentSourceId     the optional ID of the selected radio source
    * @param replacementSourceId the optional ID of the replacement source
+   * @param titleInfo           an optional string for the currently played 
+   *                            title
    */
   final case class RadioSourceStatus(currentSourceId: Option[String],
-                                     replacementSourceId: Option[String])
+                                     replacementSourceId: Option[String],
+                                     titleInfo: Option[String])
 
   /**
    * A data class defining messages sent from the server via a web socket
