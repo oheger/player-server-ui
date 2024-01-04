@@ -202,6 +202,20 @@ class DefaultUIModelSpec extends AsyncFlatSpec with Matchers:
 
     assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedPlaybackState)))
   }
+  
+  it should "also initialize the title information if it is defined" in {
+    val CurrentTitle = "Marillion / Cinderella Search"
+    val sourceStatus = DummyUIModel.CurrentSource.copy(optTitleInfo = Some(CurrentTitle))
+    val expectedPlaybackState = DummyUIModel.TestRadioPlaybackState.copy(titleInfo = CurrentTitle)
+    val service = new RadioServiceTestImpl {
+      override def loadCurrentSource(): Future[RadioService.CurrentSourceState] =
+        Future.successful(sourceStatus)
+    }
+
+    val model = createInitializedModel(service)
+
+    assertSignalValue(model.radioPlaybackStateSignal, Some(Success(expectedPlaybackState)))
+  }
 
   it should "record an exception when loading the current radio source from the server" in {
     val exception = new IllegalStateException("Test exception when loading the current radio source.")

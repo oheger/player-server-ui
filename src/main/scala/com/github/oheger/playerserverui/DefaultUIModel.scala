@@ -129,7 +129,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
           radioCurrentSourceIDVar set state.optCurrentSourceID
           radioReplacementSourceIDVar set state.optReplacementSourceID
           radioPlaybackEnabledVar set state.playbackEnabled
-          radioTitleInfoVar set ""
+          radioTitleInfoVar set state.optTitleInfo.getOrElse("")
         case Failure(exception) =>
           radioPlaybackStateAvailableVar set true
           radioPlaybackStateErrorVar set Some(exception)
