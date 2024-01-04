@@ -194,7 +194,8 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
       """
         |{
         |  "currentSourceId": "id1",
-        |  "replacementSourceId": "id2"
+        |  "replacementSourceId": "id2",
+        |  "titleInfo": "some title"
         |}
         |""".stripMargin
     val playbackState =
@@ -203,7 +204,10 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
         |  "enabled": false
         |}
         |""".stripMargin
-    val expCurrentState = RadioService.CurrentSourceState(Some("id1"), Some("id2"), playbackEnabled = false)
+    val expCurrentState = RadioService.CurrentSourceState(Some("id1"),
+      Some("id2"),
+      playbackEnabled = false,
+      Some("some title"))
 
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>
@@ -227,7 +231,7 @@ class RadioServiceSpec extends AsyncFlatSpec with BeforeAndAfterAll with Matcher
         |  "enabled": true
         |}
         |""".stripMargin
-    val expCurrentState = RadioService.CurrentSourceState(None, None, playbackEnabled = true)
+    val expCurrentState = RadioService.CurrentSourceState(None, None, playbackEnabled = true, None)
 
     val testBackend = createTestBackend()
       .whenRequestMatches { request =>

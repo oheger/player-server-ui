@@ -37,10 +37,12 @@ object RadioService:
    * @param optCurrentSourceID     the ID of the current radio source - if set
    * @param optReplacementSourceID the ID of the replacement source - if set
    * @param playbackEnabled        flag whether playback is currently active
+   * @param optTitleInfo           optional information about the current title
    */
   final case class CurrentSourceState(optCurrentSourceID: Option[String],
                                       optReplacementSourceID: Option[String],
-                                      playbackEnabled: Boolean)
+                                      playbackEnabled: Boolean,
+                                      optTitleInfo: Option[String])
 
   /**
    * Helper function to improve the error handling for future results. If a
@@ -109,7 +111,8 @@ class RadioService(backend: SttpBackend[Future, WebSockets], baseUrl: String):
       playbackState <- futPlaybackState
     yield CurrentSourceState(currentSource flatMap (_.currentSourceId),
       currentSource flatMap (_.replacementSourceId),
-      playbackState.enabled)
+      playbackState.enabled,
+      currentSource flatMap (_.titleInfo))
   }
 
   /**

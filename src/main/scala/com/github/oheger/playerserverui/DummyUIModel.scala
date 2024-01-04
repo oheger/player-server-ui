@@ -50,7 +50,8 @@ object DummyUIModel extends UIModel:
   final val CurrentSource = RadioService.CurrentSourceState(
     Some(DummyRadioSources.sources(4).id),
     None,
-    playbackEnabled = true
+    playbackEnabled = true,
+    None
   )
 
   /** An object defining test data for the radio playback state. */
