@@ -15,7 +15,7 @@
  */
 
 lazy val VersionLaminar = "15.0.1"
-lazy val VersionScala = "3.3.0"
+lazy val VersionScala = "3.3.4"
 lazy val VersionScalaJsDom = "2.4.0"
 lazy val VersionSttp = "3.9.0"
 
