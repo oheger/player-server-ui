@@ -16,12 +16,12 @@
 
 lazy val VersionLaminar = "17.2.0"
 lazy val VersionScala = "3.3.4"
-lazy val VersionScalaJsDom = "2.4.0"
-lazy val VersionSttp = "3.9.0"
+lazy val VersionScalaJsDom = "2.8.0"
+lazy val VersionSttp = "3.10.1"
 
 lazy val VersionJqueryFacade = "2.1"
 lazy val VersionJsDom = "22.1.0"
-lazy val VersionScalaTest = "3.2.16"
+lazy val VersionScalaTest = "3.2.19"
 lazy val VersionWebpack = "5.97.1"
 
 lazy val playerServerUi = project.in(file("."))
