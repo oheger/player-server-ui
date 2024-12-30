@@ -5,3 +5,39 @@ This repository contains a Web application implemented in https://www.scala-js.o
 The intended usage scenario is to run the player server on a machine in the local network. From this machine, the UI application can be accessed, and the player can be remotely controlled.
 
 Using the https://github.com/oheger/WifiControl[Wi-Fi Control] project, the UI can easily be opened on Android devices: The Wi-Fi Control app can locate the player server in the network and open the UI automatically.
+
+== Building and Running
+This section lists some useful commands that can be used during development and to create the production build.
+
+=== Live changes during development
+The project uses the same setup as described in the https://www.scala-js.org/doc/tutorial/scalajs-vite.html[Getting started tutorial] for Scala.js. Hence, the commands listed there to launch a test server and to automatically recompile sources that have been changed can be used here as well.
+
+NOTE: When using a Java version of 21 or higher, there were compilation failures. The build works fine with a 17.x version.
+
+In order to launch a dev server, use the command (in the root folder of the repository):
+
+ $ npm run dev
+
+This command starts a server and prints a URL that can be opened in a browser to show the UI. Note, however, that this is just a dummy UI working on test data. (The real UI requires a server to be present, which is not necessarily the case during development.) The dummy UI is especially useful to test changes on the layout and on the CSS file.
+
+The compilation of Scala.js source code is done by https://www.scala-sbt.org/[SBT]. The SBT console can be entered by just typing
+
+ $ sbt
+
+again in the root of the repository. (Of course, this requires that SBT is installed.) There is a task in SBT that does an automatic rebuild if there are changes on the Scala.js sources. It can be started from the SBT console by typing:
+
+ ~fastLinkJS
+
+=== Running tests
+Unfortunately, it is not possible to run unit tests from the IDE, since they need to be executed in a JavaScript environment the IDE is not aware of. However, the standard `test` tasks in SBT work correctly. For instance, to run a single test suite, use a command like:
+
+ testOnly *DefaultUIModelSpec
+
+To execute all tests, just execute the `test` task.
+
+=== Production build
+To create an optimized production build, use the command:
+
+ npm run build
+
+This creates the results in the `dist` subfolder. The files generated in this folder need to be served by the https://github.com/oheger/LineDJ/tree/main/playerServer[Player Server] in order to make the UI available.
