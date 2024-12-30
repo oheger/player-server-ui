@@ -141,9 +141,9 @@ trait UIModel:
    * @return the signal with the radio sources that can be selected
    */
   def selectableRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
-    optCurrentSourceIDSignal flatMap { optCurrentID =>
-      mapOptionalErrorSignal(radioSourcesSignal) { sources =>
-        sources filterNot { source => optCurrentID contains source.id }
+    optCurrentSourceIDSignal.combineWith(radioSourcesSignal).map { (optCurrent, optSources) => 
+      mapOptionalErrorValue(optSources) { sources =>
+        sources filterNot { source => optCurrent contains source.id }
       }
     }
 
@@ -156,13 +156,11 @@ trait UIModel:
    * @return the signal with the sorted list of radio sources
    */
   def sortedRadioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] =
-    for
-      sortMode <- radioSourcesSortModeSignal
-      sources <- selectableRadioSourcesSignal
-    yield
+    radioSourcesSortModeSignal.combineWith(selectableRadioSourcesSignal).map { (sortMode, sources) =>
       mapOptionalErrorValue(sources) { value =>
         value.sortWith(sortFunctionForMode(sortMode))
       }
+    }
 
   /**
    * Returns a signal for the playback state of the current radio source. This

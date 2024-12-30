@@ -70,22 +70,6 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
   /** Signal for the current list of radio sources. */
   override val radioSourcesSignal: Signal[Option[Try[List[RadioModel.RadioSource]]]] = radioSourcesVar.signal
 
-  override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
-    for
-      available <- radioPlaybackStateAvailableVar.signal
-      optError <- radioPlaybackStateErrorVar.signal
-      optCurrent <- radioSourceFromIDSignal(radioCurrentSourceIDVar)
-      optReplace <- radioSourceFromIDSignal(radioReplacementSourceIDVar)
-      enabled <- radioPlaybackEnabledVar.signal
-      title <- radioTitleInfoVar.signal
-    yield
-      if !available then None
-      else
-        optError match
-          case Some(exception) => Some(Failure(exception))
-          case None =>
-            Some(Success(UIModel.RadioPlaybackState(optCurrent, optReplace, enabled, title)))
-
   /**
    * A signal used for internal purposes that generates a map from the list of
    * current radio sources using the source IDs as keys. This can be used to
@@ -96,6 +80,20 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
       sources.map(source => source.id -> source).toMap
     case _ => Map.empty
   }
+
+  override val radioPlaybackStateSignal: Signal[Option[Try[UIModel.RadioPlaybackState]]] =
+    radioPlaybackStateAvailableVar.signal.combineWith(radioPlaybackStateErrorVar,
+      radioSourceFromIDSignal(radioCurrentSourceIDVar),
+      radioSourceFromIDSignal(radioReplacementSourceIDVar),
+      radioPlaybackEnabledVar.signal,
+      radioTitleInfoVar.signal).map { (available, optError, optCurrent, optReplace, enabled, title) =>
+        if !available then None
+        else
+          optError match
+            case Some(exception) => Some(Failure(exception))
+            case None =>
+              Some(Success(UIModel.RadioPlaybackState(optCurrent, optReplace, enabled, title)))
+    }
 
   /**
    * A flag to record whether the listener for radio message has already been
@@ -229,7 +227,7 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
         registerRadioMessageListener()
 
   /**
-   * Returns a [[Signal]] that map the ID of the radio source in the given
+   * Returns a [[Signal]] that maps the ID of the radio source in the given
    * [[Var]] to the referenced radio source. If the ID cannot be resolved, the
    * signal reports a dummy radio source.
    *
@@ -237,10 +235,8 @@ class DefaultUIModel(radioService: RadioService) extends UIModel:
    * @return a signal with the optional resolved radio source
    */
   private def radioSourceFromIDSignal(idVar: Var[Option[String]]): Signal[Option[RadioModel.RadioSource]] =
-    for
-      optID <- idVar.signal
-      sourceMap <- radioSourcesMapSignal
-    yield
+    idVar.signal.combineWith(radioSourcesMapSignal).map { (optID, sourceMap) =>
       optID map { id =>
         sourceMap.getOrElse(id, RadioModel.UnknownRadioSource)
       }
+    }

@@ -366,7 +366,7 @@ object Main:
                                                     (data: Signal[A] => Signal[List[Element]]): Element =
     div(
       className := styleClass,
-      children <-- signal.flatMap {
+      children <-- signal.flatMapSwitch {
         case None =>
           Signal.fromValue(List(loadingIndicator()))
         case Some(Failure(exception)) =>
